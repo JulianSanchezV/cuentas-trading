@@ -11,6 +11,12 @@
       "nombre": "Beatriz",
       "activo": true,
       "creado": 1790645360860
+    },
+    {
+      "id": "mum00oodev8vx",
+      "nombre": "Oscar",
+      "activo": true,
+      "creado": 1790645368045
     }
   ],
   "movs": [
@@ -29,6 +35,14 @@
       "fecha": "2026-09-06",
       "monto": 20000000,
       "creado": 1790645360860
+    },
+    {
+      "id": "mum00oodbuxrk",
+      "tipo": "aporte",
+      "persona": "Oscar",
+      "fecha": "2026-09-06",
+      "monto": 5000000,
+      "creado": 1790645368045
     }
   ]
 }
