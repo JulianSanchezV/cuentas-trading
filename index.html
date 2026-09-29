@@ -359,6 +359,7 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
       items.push({m:g,html:`<span class="pill g">Ganancia ${k}</span><div class="what">${g.fecha?fdate(g.fecha)+' · ':''}${usd(g.usd||0)}${g.trm?' · TRM de ese día '+nf2.format(g.trm):''}<small class="num">${det||'Sin capital registrado'}</small></div><span class="amt num pos">${usd(g.usd||0)}</span>`});
     });
     if(gs.length) items.push({m:null,html:`<span class="pill g">Total</span><div class="what">${usd(gUsd)} × TRM ${isCur?'vigente':'final'} ${nf2.format(trm)}<small>El valor en pesos se recalcula con la TRM más reciente del mes</small></div><span class="amt num pos">${cop(gCop)}</span>`});
+    items.sort((a,b)=>!a.m?-1:!b.m?1:byDate(b.m,a.m));
     $('hist').innerHTML=items.length?items.map(it=>`<div class="item">${it.html}${isAdmin()&&it.m?`<button class="del" type="button" data-del="${esc(it.m.id)}">Borrar</button>`:'<span></span>'}</div>`).join(''):'<div class="empty">Sin movimientos este mes.</div>';
     if(open&&open.mode==='cambiar'){ const i=$('iMonto'); if(i){ i.focus(); i.select(); } }
   }
@@ -685,9 +686,9 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
     section(r++,'Ganancias reportadas');
     if(gs.length){
       header(r++,['#','Fecha','Ganancia (USD)','TRM de ese día','Valor a TRM '+(mes===lastMes()?'vigente':'final'),'Reparto por socio (USD)','']); ws.mergeCells(r-1,6,r-1,7);
-      gs.forEach((g,k)=>{
+      [...gs].reverse().forEach((g,k)=>{
         const fill=k%2?WHITE:SOFT;
-        cellf(r,1,'Reporte '+(k+1),null,{left:true,bold:true,fill});
+        cellf(r,1,'Reporte '+(gs.length-k),null,{left:true,bold:true,fill});
         cellf(r,2,g.fecha?fdate(g.fecha):'',null,{fill});
         cellf(r,3,g.usd||0,F_USD,{fill});
         cellf(r,4,g.trm||0,F_TRM,{fill});
@@ -705,7 +706,7 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
     r++;
 
     section(r++,'Movimientos de capital');
-    const hist=capHistory(mes);
+    const hist=capHistory(mes).reverse();
     if(hist.length){
       header(r++,['Socio','Concepto','','Capital anterior','Capital nuevo','Diferencia','Tipo']);
       ws.mergeCells(r-1,2,r-1,3);
