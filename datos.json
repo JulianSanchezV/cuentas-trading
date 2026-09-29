@@ -5,6 +5,12 @@
       "nombre": "Julian",
       "activo": true,
       "creado": 1790645347914
+    },
+    {
+      "id": "mum00j4s43vtf",
+      "nombre": "Beatriz",
+      "activo": true,
+      "creado": 1790645360860
     }
   ],
   "movs": [
@@ -15,6 +21,14 @@
       "fecha": "2026-09-06",
       "monto": 8000000,
       "creado": 1790645347914
+    },
+    {
+      "id": "mum00j4sok4n2",
+      "tipo": "aporte",
+      "persona": "Beatriz",
+      "fecha": "2026-09-06",
+      "monto": 20000000,
+      "creado": 1790645360860
     }
   ]
 }
