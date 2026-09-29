@@ -56,46 +56,9 @@
       "monto": 3068500,
       "creado": 1790646533561,
       "mes": "2026-09"
-    },
-    {
-      "id": "mum2cajlxex0i",
-      "tipo": "ganancia",
-      "mes": "2026-10",
-      "fecha": "2026-09-01",
-      "usd": 100,
-      "trm": 3400,
-      "monto": 340000,
-      "creado": 1790649268833
-    },
-    {
-      "id": "mum2cvvqeaeum",
-      "tipo": "ganancia",
-      "mes": "2026-10",
-      "fecha": "2026-09-28",
-      "usd": 100,
-      "trm": 3400,
-      "monto": 340000,
-      "creado": 1790649296486
-    },
-    {
-      "id": "mum2xdxbsgdii",
-      "tipo": "trm",
-      "mes": "2026-10",
-      "fecha": "2026-09-28",
-      "trm": 5000,
-      "creado": 1790650252991
-    },
-    {
-      "id": "mum2xq3ggg165",
-      "tipo": "trm",
-      "mes": "2026-10",
-      "fecha": "2026-09-28",
-      "trm": 2000,
-      "creado": 1790650268764
     }
   ],
   "meses": [
-    "2026-09",
-    "2026-10"
+    "2026-09"
   ]
 }
