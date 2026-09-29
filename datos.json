@@ -66,6 +66,16 @@
       "trm": 3400,
       "monto": 340000,
       "creado": 1790649268833
+    },
+    {
+      "id": "mum2cvvqeaeum",
+      "tipo": "ganancia",
+      "mes": "2026-10",
+      "fecha": "2026-09-28",
+      "usd": 100,
+      "trm": 3400,
+      "monto": 340000,
+      "creado": 1790649296486
     }
   ],
   "meses": [
