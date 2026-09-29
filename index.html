@@ -46,11 +46,12 @@ section{display:grid;gap:10px}
 @media (max-width:520px){.totals{grid-template-columns:1fr 1fr}.totals > div:nth-child(3){grid-column:1/-1;border-left:0;border-top:1px solid var(--line)}}
 
 .people{display:grid;gap:10px}
-.person{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:grid;grid-template-columns:minmax(0,1.2fr) repeat(3,minmax(0,1fr));gap:8px 14px;align-items:center}
+.person{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:grid;grid-template-columns:minmax(0,1.1fr) repeat(4,minmax(0,1fr));gap:8px 14px;align-items:center}
 .person .name{display:flex;align-items:center;gap:8px;font-weight:600;font-size:1.02rem;min-width:0;overflow-wrap:anywhere}
 .dot{width:10px;height:10px;border-radius:50%;flex:none}
 .person .cell{display:grid;gap:1px;text-align:right;min-width:0}
 .person .cell .v{font-size:.98rem;overflow-wrap:anywhere}
+.person .cell .sub{font-size:.72rem;color:var(--muted)}
 .bar{grid-column:1/-1;height:5px;background:var(--soft);border-radius:3px;overflow:hidden}
 .bar i{display:block;height:100%}
 .acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding-top:4px;border-top:1px dashed var(--line)}
@@ -59,7 +60,7 @@ section{display:grid;gap:10px}
 .sbtn.rm:hover{color:var(--neg);border-color:var(--neg)}
 .inline{grid-column:1/-1;background:var(--soft);border-radius:9px;padding:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;align-items:end}
 .inline p{grid-column:1/-1;margin:0;font-size:.88rem}
-@media (max-width:520px){.person{grid-template-columns:repeat(3,minmax(0,1fr))}.person .name{grid-column:1/-1}.person .cell{text-align:left}}
+@media (max-width:640px){.person{grid-template-columns:repeat(2,minmax(0,1fr))}.person .name{grid-column:1/-1}.person .cell{text-align:left}}
 
 .admin{background:var(--admin-bg);border:1px solid var(--admin);border-radius:14px;padding:16px;display:grid;gap:16px}
 .admin .block{display:grid;gap:8px}
@@ -120,12 +121,13 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
       <p class="msg" id="pMsg"></p>
     </div>
     <div class="block">
-      <h3>Ganancia del mes</h3>
+      <h3>Ganancia total del mes</h3>
       <div class="row">
         <div class="field"><label for="gFecha">Fecha</label><input id="gFecha" type="date"></div>
-        <div class="field"><label for="gUsd">Ganancia (USD)</label><input id="gUsd" type="text" class="num" inputmode="decimal" placeholder="350,50"></div>
-        <div class="field"><label for="gTrm">TRM del día</label><input id="gTrm" type="text" class="num" inputmode="decimal" placeholder="4.050,25"></div>
-        <button class="btn" id="gSave" type="button">Agregar</button>
+        <div class="field"><label for="gMoneda">Moneda</label><select id="gMoneda"><option value="COP">Pesos (COP)</option><option value="USD">Dólares (USD)</option></select></div>
+        <div class="field"><label for="gUsd" id="gUsdLbl">Ganancia total (COP)</label><input id="gUsd" type="text" class="num" inputmode="decimal" placeholder="1.500.000"></div>
+        <div class="field" id="gTrmBox" hidden><label for="gTrm">TRM del día</label><input id="gTrm" type="text" class="num" inputmode="decimal" placeholder="4.050,25"></div>
+        <button class="btn" id="gSave" type="button">Repartir y guardar</button>
       </div>
       <div class="preview" id="gPrev"></div>
       <p class="msg" id="gMsg"></p>
@@ -314,7 +316,8 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
         <div class="name"><span class="dot" style="background:${col}"></span>${esc(p.nombre)}</div>
         <div class="cell"><span class="lbl">Invertido</span><span class="v num">${cop(d.cap)}</span></div>
         <div class="cell"><span class="lbl">Porcentaje</span><span class="v num">${pct(sh)}</span></div>
-        <div class="cell"><span class="lbl">Ganancia</span><span class="v num pos">${cop(d.gan)}</span></div>
+        <div class="cell"><span class="lbl">Ganancia total</span><span class="v num pos">${cop(d.gan)}</span></div>
+        <div class="cell"><span class="lbl">Último mes</span><span class="v num pos">${last&&last.parts[p.nombre]!=null?cop(last.parts[p.nombre]):'—'}</span>${last&&last.parts[p.nombre]!=null?`<span class="sub">${fdate(last.fecha)}</span>`:''}</div>
         <div class="bar"><i style="width:${(sh*100).toFixed(2)}%;background:${col}"></i></div>${extra}</div>`;
     }).join(''):`<div class="empty">${adm?'Agrega el primer socio desde el panel de arriba.':'Todavía no hay socios registrados.'}</div>`;
 
@@ -391,23 +394,39 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
     if(ok){ $('pNombre').value=''; $('pMonto').value=''; }
   };
 
+  function gAmount(){
+    const usdMode=$('gMoneda').value==='USD', raw=$('gUsd').value;
+    if(!usdMode){ const v=parseDec(raw); return {v:v>0?Math.round(v):NaN}; }
+    const u=parseDec(raw), t=parseDec($('gTrm').value);
+    return {v:(u>0&&t>0)?Math.round(u*t):NaN,u,t};
+  }
   function gPreview(){
-    const pv=$('gPrev'), u=parseDec($('gUsd').value), t=parseDec($('gTrm').value);
-    if(!(u>0)||!(t>0)){ pv.innerHTML=''; return; }
-    const v=Math.round(u*t), f=$('gFecha').value||today();
+    const pv=$('gPrev'), {v}=gAmount();
+    if(!(v>0)){ pv.innerHTML=''; return; }
+    const f=$('gFecha').value||today();
     const {P}=compute(data.movs.filter(m=>m.fecha<=f));
     const ns=Object.keys(P).filter(n=>P[n].cap>0), C=ns.reduce((a,n)=>a+P[n].cap,0);
-    pv.innerHTML=`<span>Total <b class="num pos">${cop(v)}</b></span>`+(C>0?ns.map(n=>`<span>${esc(n)} <b class="num">${cop(v*P[n].cap/C)}</b></span>`).join('')+`<span class="muted">Rendimiento <b class="num">${pct(v/C)}</b></span>`:'<span class="muted">No hay capital registrado antes de esta fecha.</span>');
+    pv.innerHTML=`<span>Total <b class="num pos">${cop(v)}</b></span>`+(C>0?ns.map(n=>`<span>${esc(n)} (${pct(P[n].cap/C)}) <b class="num">${cop(v*P[n].cap/C)}</b></span>`).join('')+`<span class="muted">Rendimiento <b class="num">${pct(v/C)}</b></span>`:'<span class="muted">No hay capital registrado antes de esta fecha.</span>');
   }
+  function gMode(){
+    const usdMode=$('gMoneda').value==='USD';
+    $('gTrmBox').hidden=!usdMode;
+    $('gUsdLbl').textContent=usdMode?'Ganancia total (USD)':'Ganancia total (COP)';
+    $('gUsd').placeholder=usdMode?'350,50':'1.500.000';
+    gPreview();
+  }
+  $('gMoneda').addEventListener('change',gMode);
   ['gUsd','gTrm','gFecha'].forEach(id=>$(id).addEventListener('input',gPreview));
   $('gSave').onclick=async()=>{
-    const m=$('gMsg'), u=parseDec($('gUsd').value), t=parseDec($('gTrm').value), f=$('gFecha').value;
+    const m=$('gMsg'), f=$('gFecha').value, usdMode=$('gMoneda').value==='USD', {v,u,t}=gAmount();
     if(!f) return flash(m,'Elige la fecha.',true);
-    if(!(u>0)) return flash(m,'Escribe la ganancia en dólares.',true);
-    if(!(t>0)) return flash(m,'Escribe la TRM del día.',true);
-    const v=Math.round(u*t);
+    if(usdMode&&!(u>0)) return flash(m,'Escribe la ganancia total en dólares.',true);
+    if(usdMode&&!(t>0)) return flash(m,'Escribe la TRM del día.',true);
+    if(!(v>0)) return flash(m,'Escribe la ganancia total en pesos.',true);
     $('gSave').disabled=true;
-    const ok=await save(d=>d.movs.push({id:uid(),tipo:'ganancia',fecha:f,usd:u,trm:t,monto:v,creado:Date.now()}),'Ganancia '+fdate(f)+' '+cop(v),m);
+    const mov={id:uid(),tipo:'ganancia',fecha:f,monto:v,creado:Date.now()};
+    if(usdMode){ mov.usd=u; mov.trm=t; }
+    const ok=await save(d=>d.movs.push(mov),'Ganancia '+fdate(f)+' '+cop(v),m);
     $('gSave').disabled=false;
     if(ok){ $('gUsd').value=''; gPreview(); }
   };
