@@ -1,4 +1,20 @@
 {
-  "personas": [],
-  "movs": []
+  "personas": [
+    {
+      "id": "mum00956vxwsh",
+      "nombre": "Julian",
+      "activo": true,
+      "creado": 1790645347914
+    }
+  ],
+  "movs": [
+    {
+      "id": "mum00956uifws",
+      "tipo": "aporte",
+      "persona": "Julian",
+      "fecha": "2026-09-06",
+      "monto": 8000000,
+      "creado": 1790645347914
+    }
+  ]
 }
