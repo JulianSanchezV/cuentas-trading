@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cuentas del Trading</title>
+<title>Cuentas Trading</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -119,7 +119,7 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
 <div class="wrap">
   <header class="head">
     <div style="display:grid;gap:4px">
-      <h1>Cuentas del Trading</h1>
+      <h1>Cuentas Trading</h1>
       <span class="status" id="status">Cargando…</span>
     </div>
     <span class="badge" id="badge" hidden>Modo administrador</span>
@@ -169,7 +169,8 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
   const $=id=>document.getElementById(id);
   const FILE='datos.json';
   const COLORS=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
-  const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const capMonths=t=>String(t).replace(/\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b/g,w=>w[0].toUpperCase()+w.slice(1));
   const MES3=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
 
@@ -263,20 +264,23 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
   }
 
   /* ---------- cálculo por mes ---------- */
-  const capMovs=()=>data.movs.filter(m=>m.tipo!=='ganancia').sort((a,b)=>a.mes<b.mes?-1:a.mes>b.mes?1:(a.creado||0)-(b.creado||0));
+  const capMovs=()=>data.movs.filter(m=>m.tipo==='aporte'||m.tipo==='retiro').sort((a,b)=>a.mes<b.mes?-1:a.mes>b.mes?1:(a.creado||0)-(b.creado||0));
   function capAt(mes){ // capital de cada persona en ese mes
     const P={};
     for(const m of capMovs()){ if(m.mes>mes) break; P[m.persona]=(P[m.persona]||0)+(m.tipo==='aporte'?m.monto:-m.monto); }
     return P;
   }
   const gainsOf=mes=>data.movs.filter(m=>m.tipo==='ganancia'&&m.mes===mes).sort((a,b)=>(a.fecha||'')<(b.fecha||'')?-1:(a.fecha||'')>(b.fecha||'')?1:(a.creado||0)-(b.creado||0));
+  const byDate=(a,b)=>(a.fecha||'')<(b.fecha||'')?-1:(a.fecha||'')>(b.fecha||'')?1:(a.creado||0)-(b.creado||0);
+  const trmEvents=mes=>data.movs.filter(m=>(m.tipo==='ganancia'||m.tipo==='trm')&&m.mes===mes&&m.trm>0).sort(byDate);
+  function trmOf(mes){ const e=trmEvents(mes); return e.length?e[e.length-1]:null; }
   function monthInfo(mes){
     const P=capAt(mes), ns=Object.keys(P).filter(n=>P[n]>0).sort((a,b)=>P[b]-P[a]||a.localeCompare(b)), C=ns.reduce((a,n)=>a+P[n],0);
     const i=data.meses.indexOf(mes), prev=i>0?data.meses[i-1]:null, PP=prev?capAt(prev):{};
-    const gs=gainsOf(mes), gCop=gs.reduce((a,g)=>a+g.monto,0), gUsd=gs.reduce((a,g)=>a+(g.usd||0),0);
-    const parts={}, partsUsd={};
-    if(C>0) ns.forEach(n=>{ parts[n]=gCop*P[n]/C; partsUsd[n]=gUsd*P[n]/C; });
-    return {mes,P,ns,C,prev,PP,gs,gCop,gUsd,parts,partsUsd};
+    const gs=gainsOf(mes), gUsd=gs.reduce((a,g)=>a+(g.usd||0),0), te=trmOf(mes), trm=te?te.trm:0;
+    const gCop=Math.round(gUsd*trm), parts={}, partsUsd={};
+    if(C>0) ns.forEach(n=>{ partsUsd[n]=gUsd*P[n]/C; parts[n]=partsUsd[n]*trm; });
+    return {mes,P,ns,C,prev,PP,gs,gCop,gUsd,parts,partsUsd,trm,te};
   }
   const lastMes=()=>data.meses[data.meses.length-1]||null;
   const personOrder=()=>[...data.personas].sort((a,b)=>(a.creado||0)-(b.creado||0));
@@ -288,7 +292,7 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
     const run={}; for(const m of capMovs()){ if(m.mes>=mes) break; run[m.persona]=(run[m.persona]||0)+(m.tipo==='aporte'?m.monto:-m.monto); }
     return capMovs().filter(x=>x.mes===mes).map(m=>{
       const a=run[m.persona]||0, b=a+(m.tipo==='aporte'?m.monto:-m.monto); run[m.persona]=b;
-      return {m,a,b,why:m.nota||(a===0?'Inversión inicial':(m.tipo==='aporte'?'Aporte':'Retiro')+' al inicio de '+mLong(mes))};
+      return {m,a,b,why:m.nota?capMonths(m.nota):(a===0?'Inversión inicial':(m.tipo==='aporte'?'Aporte':'Retiro')+' al inicio de '+mLong(mes))};
     });
   }
 
@@ -312,11 +316,11 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
 
   function renderMonth(mes){
     if(!mes){ $('totals').innerHTML=''; $('people').innerHTML=`<div class="empty">${isAdmin()?'Agrega el primer socio desde el panel de arriba.':'Todavía no hay socios registrados.'}</div>`; $('hist').innerHTML='<div class="empty">Aún no hay registros.</div>'; $('peopleTitle').textContent='Socios'; $('histTitle').textContent='Movimientos'; return; }
-    const {P,C,prev,PP,gs,gCop,gUsd,parts,partsUsd}=monthInfo(mes), adm=isAdmin(), editable=adm&&mes===lastMes()&&!gs.length;
+    const {P,C,prev,PP,gs,gCop,gUsd,parts,partsUsd,trm,te}=monthInfo(mes), adm=isAdmin(), editable=adm&&mes===lastMes()&&!gs.length, isCur=mes===lastMes();
     $('totals').innerHTML=`
       <div><span class="lbl">Capital de ${mLong(mes)}</span><span class="big num">${cop(C)}</span>${prev?`<span class="sub num">${C===sumOf(PP)?'Igual que '+mLong(prev):scop(C-sumOf(PP))+' vs '+mLong(prev)}</span>`:''}</div>
-      <div><span class="lbl">Ganancia del mes</span><span class="big num pos">${gs.length?cop(gCop):'—'}</span><span class="sub num">${gs.length?(gUsd?usd(gUsd)+' · ':'')+gs.length+(gs.length===1?' reporte':' reportes'):'Sin reportes aún'}</span></div>
-      <div><span class="lbl">Rendimiento</span><span class="big num">${gs.length&&C>0?pct(gCop/C):'—'}</span></div>`;
+      <div><span class="lbl">Ganancia del mes</span><span class="big num pos">${gs.length?cop(gCop):'—'}</span><span class="sub num">${gs.length?usd(gUsd)+' × TRM '+nf2.format(trm)+(te&&te.fecha?' ('+fdate(te.fecha)+')':''):'Sin reportes aún'}</span></div>
+      <div><span class="lbl">Rendimiento</span><span class="big num">${gs.length&&C>0?pct(gCop/C):'—'}</span><span class="sub">${gs.length?gs.length+(gs.length===1?' reporte':' reportes')+(isCur?' · TRM vigente':' · TRM final'):''}</span></div>`;
     $('peopleTitle').textContent='Socios en '+mLong(mes);
     const list=byCap(personOrder().filter(p=>(P[p.nombre]||0)>0||(editable&&p.activo!==false)),P);
     $('people').innerHTML=list.length?list.map(p=>{
@@ -350,10 +354,14 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
     const ch=new Set(capHistory(mes).map(x=>x.m.persona));
     const same=personOrder().filter(p=>prev&&(PP[p.nombre]||0)>0&&!ch.has(p.nombre));
     if(same.length) items.push({m:null,html:`<span class="pill i">Sin cambio</span><div class="what">${same.map(p=>esc(p.nombre)).join(', ')}<small>Siguen con el mismo capital de ${mLong(prev)}</small></div><span></span>`});
-    gs.forEach((g,k)=>{
-      const det=Object.keys(parts).sort((x,y)=>P[y]-P[x]).map(n=>esc(n)+' '+cop(g.monto*P[n]/C)+(g.usd?' ('+usd(g.usd*P[n]/C)+')':'')).join(' · ');
-      items.push({m:g,html:`<span class="pill g">Ganancia ${k+1}</span><div class="what">${g.fecha?fdate(g.fecha)+' · ':''}${g.usd?usd(g.usd)+' × TRM '+nf2.format(g.trm):''}<small class="num">${det||'Sin capital registrado'}</small></div><span class="amt num pos">${cop(g.monto)}</span>`});
+    let k=0;
+    trmEvents(mes).concat(data.movs.filter(m=>m.tipo==='ganancia'&&m.mes===mes&&!(m.trm>0))).sort(byDate).forEach(g=>{
+      if(g.tipo==='trm'){ items.push({m:g,html:`<span class="pill i">TRM</span><div class="what">${g.fecha?fdate(g.fecha)+' · ':''}TRM actualizada a ${nf2.format(g.trm)}<small>Todas las ganancias del mes se convierten con esta TRM</small></div><span class="amt num">${nf2.format(g.trm)}</span>`}); return; }
+      k++;
+      const det=Object.keys(partsUsd).sort((x,y)=>P[y]-P[x]).map(n=>esc(n)+' '+usd((g.usd||0)*P[n]/C)).join(' · ');
+      items.push({m:g,html:`<span class="pill g">Ganancia ${k}</span><div class="what">${g.fecha?fdate(g.fecha)+' · ':''}${usd(g.usd||0)}${g.trm?' · TRM de ese día '+nf2.format(g.trm):''}<small class="num">${det||'Sin capital registrado'}</small></div><span class="amt num pos">${usd(g.usd||0)}</span>`});
     });
+    if(gs.length) items.push({m:null,html:`<span class="pill g">Total</span><div class="what">${usd(gUsd)} × TRM ${isCur?'vigente':'final'} ${nf2.format(trm)}<small>El valor en pesos se recalcula con la TRM más reciente del mes</small></div><span class="amt num pos">${cop(gCop)}</span>`});
     $('hist').innerHTML=items.length?items.map(it=>`<div class="item">${it.html}${isAdmin()&&it.m?`<button class="del" type="button" data-del="${esc(it.m.id)}">Borrar</button>`:'<span></span>'}</div>`).join(''):'<div class="empty">Sin movimientos este mes.</div>';
     if(open&&open.mode==='cambiar'){ const i=$('iMonto'); if(i){ i.focus(); i.select(); } }
   }
@@ -378,7 +386,7 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
         <div class="bar"><i style="width:${(sh*100).toFixed(2)}%;background:${col}"></i></div></div>`;
     }).join(''):'<div class="empty">Todavía no hay socios registrados.</div>';
     $('histTitle').textContent='Ganancia por mes';
-    const rows=[...data.meses].reverse().map(m=>{const {gs,C,gCop,gUsd}=monthInfo(m);return `<div class="item"><span class="pill ${gs.length?'g':'i'}">${mShort(m)}</span><div class="what">Capital ${cop(C)}<small class="num">${gs.length?(gUsd?usd(gUsd)+' · ':'')+gs.length+(gs.length===1?' reporte':' reportes')+' · rendimiento '+(C>0?pct(gCop/C):'—'):'Sin reportes aún'}</small></div><span class="amt num ${gs.length?'pos':'muted'}">${gs.length?cop(gCop):'—'}</span><span></span></div>`;});
+    const rows=[...data.meses].reverse().map(m=>{const {gs,C,gCop,gUsd,trm}=monthInfo(m);return `<div class="item"><span class="pill ${gs.length?'g':'i'}">${mShort(m)}</span><div class="what">Capital ${cop(C)}<small class="num">${gs.length?usd(gUsd)+' × TRM '+nf2.format(trm)+' · '+gs.length+(gs.length===1?' reporte':' reportes')+' · rendimiento '+(C>0?pct(gCop/C):'—'):'Sin reportes aún'}</small></div><span class="amt num ${gs.length?'pos':'muted'}">${gs.length?cop(gCop):'—'}</span><span></span></div>`;});
     $('hist').innerHTML=rows.join('')||'<div class="empty">Aún no hay meses.</div>';
   }
 
@@ -396,13 +404,21 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
     if(cur){
       const {gCop}=monthInfo(cur);
       h+=`<div class="block"><h3>Agregar ganancia a ${mLong(cur)}</h3>
-        <p class="note">${gs.length?'Llevas '+gs.length+(gs.length===1?' reporte':' reportes')+' este mes por '+cop(gCop)+'. La nueva ganancia se suma.':'Registra cada reporte semanal; se van sumando en el mes.'}</p>
+        <p class="note">${gs.length?'Llevas '+gs.length+(gs.length===1?' reporte':' reportes')+' este mes por '+cop(gCop)+' ('+usd(monthInfo(cur).gUsd)+'). La nueva ganancia se suma y la TRM que escribas se aplica a todo el mes.':'Registra cada reporte semanal; se van sumando en dólares y todo se convierte con la TRM del último reporte.'}</p>
         <div class="row">
           <div class="field"><label for="gFecha">Fecha del reporte</label><input id="gFecha" type="date" value="${today()}"></div>
           <div class="field"><label for="gUsd">Ganancia (USD)</label><input id="gUsd" type="text" class="num" inputmode="decimal" placeholder="350,50"></div>
           <div class="field"><label for="gTrm">TRM del día</label><input id="gTrm" type="text" class="num" inputmode="decimal" placeholder="4.050,25"></div>
           <button class="btn" id="gSave" type="button">Sumar ganancia</button>
         </div><div class="preview" id="gPrev"></div><p class="msg" id="gMsg"></p></div>`;
+      if(gs.length){ const {trm,te,gUsd}=monthInfo(cur);
+        h+=`<div class="block"><h3>Actualizar TRM de ${mLong(cur)}</h3>
+        <p class="note">TRM vigente: <b class="num">${nf2.format(trm)}</b>${te&&te.fecha?' ('+fdate(te.fecha)+')':''}. Úsalo cuando cambie la TRM sin nueva ganancia, por ejemplo el día del retiro.</p>
+        <div class="row">
+          <div class="field"><label for="tFecha">Fecha</label><input id="tFecha" type="date" value="${today()}"></div>
+          <div class="field"><label for="tTrm">Nueva TRM</label><input id="tTrm" type="text" class="num" inputmode="decimal" placeholder="4.050,25"></div>
+          <button class="btn" id="tSave" type="button">Actualizar TRM</button>
+        </div><div class="preview" id="tPrev"></div><p class="msg" id="tMsg"></p></div>`; }
     }
     if(!cur||!gs.length){
       h+=`<div class="block"><h3>Agregar persona${cur?' en '+mLong(cur):''}</h3>
@@ -460,17 +476,29 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
       const pv=()=>{
         const u=parseDec($('gUsd').value), t=parseDec($('gTrm').value), v=(u>0&&t>0)?Math.round(u*t):NaN;
         if(!(v>0)){ $('gPrev').innerHTML=''; return; }
-        const {ns,P,C,gCop}=monthInfo(cur);
-        $('gPrev').innerHTML=`<span>Este reporte <b class="num pos">${cop(v)}</b> <span class="muted">(${usd(u)})</span></span>`+(C>0?ns.map(n=>`<span>${esc(n)} (${pct(P[n]/C)}) <b class="num">${cop(v*P[n]/C)}</b> <span class="muted num">${usd(u*P[n]/C)}</span></span>`).join('')+`<span class="muted">Total del mes quedaría en <b class="num">${cop(gCop+v)}</b></span>`:'<span class="muted">No hay capital en este mes.</span>');
+        const {ns,P,C,gCop,gUsd}=monthInfo(cur), U=gUsd+u, T=Math.round(U*t);
+        $('gPrev').innerHTML=`<span>Total del mes: <b class="num">${usd(U)}</b> × ${nf2.format(t)} = <b class="num pos">${cop(T)}</b>${gs0()?` <span class="muted">(antes ${cop(gCop)})</span>`:''}</span>`+(C>0?ns.map(n=>`<span>${esc(n)} (${pct(P[n]/C)}) <b class="num">${cop(T*P[n]/C)}</b> <span class="muted num">${usd(U*P[n]/C)}</span></span>`).join(''):'<span class="muted">No hay capital en este mes.</span>');
       };
+      const gs0=()=>gainsOf(cur).length>0;
       ['gUsd','gTrm'].forEach(id=>$(id).addEventListener('input',pv));
       $('gSave').onclick=async()=>{
         const m=$('gMsg'), u=parseDec($('gUsd').value), t=parseDec($('gTrm').value), f=$('gFecha').value;
         if(!(u>0)) return flash(m,'Escribe la ganancia en dólares.',true);
         if(!(t>0)) return flash(m,'Escribe la TRM del día.',true);
         const v=Math.round(u*t); $('gSave').disabled=true;
-        const ok=await save(d=>d.movs.push({id:uid(),tipo:'ganancia',mes:cur,fecha:f||today(),usd:u,trm:t,monto:v,creado:Date.now()}),'Ganancia sumada a '+mLong(cur)+': '+cop(v),m);
+        const ok=await save(d=>d.movs.push({id:uid(),tipo:'ganancia',mes:cur,fecha:f||today(),usd:u,trm:t,monto:v,creado:Date.now()}),'Ganancia sumada a '+mLong(cur)+': '+usd(u),m);
         if(!ok&&$('gSave')) $('gSave').disabled=false;
+      };
+    }
+    if($('tSave')){
+      const {gUsd,gCop}=monthInfo(cur);
+      $('tTrm').addEventListener('input',()=>{ const t=parseDec($('tTrm').value); $('tPrev').innerHTML=t>0?`<span>${usd(gUsd)} × ${nf2.format(t)} = <b class="num pos">${cop(gUsd*t)}</b> <span class="muted">(antes ${cop(gCop)})</span></span>`:''; });
+      $('tSave').onclick=async()=>{
+        const m=$('tMsg'), t=parseDec($('tTrm').value), f=$('tFecha').value;
+        if(!(t>0)) return flash(m,'Escribe la nueva TRM.',true);
+        $('tSave').disabled=true;
+        const ok=await save(d=>d.movs.push({id:uid(),tipo:'trm',mes:cur,fecha:f||today(),trm:t,creado:Date.now()}),'TRM de '+mLong(cur)+' actualizada a '+nf2.format(t),m);
+        if(!ok&&$('tSave')) $('tSave').disabled=false;
       };
     }
     if($('pSave')){
@@ -607,8 +635,8 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
   }
   async function buildExcel(mes){
     const ExcelJS=await loadExcelJS();
-    const {P,ns,C,prev,PP,gs,gCop,gUsd,parts,partsUsd}=monthInfo(mes);
-    const wb=new ExcelJS.Workbook(); wb.creator='Cuentas del Trading'; wb.created=new Date();
+    const {P,ns,C,prev,PP,gs,gCop,gUsd,parts,partsUsd,trm,te}=monthInfo(mes);
+    const wb=new ExcelJS.Workbook(); wb.creator='Cuentas Trading'; wb.created=new Date();
     const ws=wb.addWorksheet(mShort(mes),{views:[{showGridLines:false}],pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0}});
     const NAVY='FF18203A', ACC='FF3346B8', SOFT='FFE8EBF3', LINE='FFDDE1EB', POS='FF197A4B', NEG='FFB73A32', MUT='FF5D6682', WHITE='FFFFFFFF';
     const F_COP='"$"#,##0', F_USD='"US$"#,##0.00', F_PCT='0.00%', F_TRM='#,##0.00';
@@ -620,12 +648,12 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
     const header=(r,labels)=>{ labels.forEach((t,k)=>{ const c=ws.getCell(r,k+1); c.value=t; c.font={bold:true,color:{argb:WHITE}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:NAVY}}; c.alignment={vertical:'middle',horizontal:k===0?'left':'center',wrapText:true}; c.border=border; }); ws.getRow(r).height=22; };
     const cellf=(r,k,v,fmt,opt={})=>{ const c=ws.getCell(r,k); c.value=v; if(fmt) c.numFmt=fmt; c.border=border; c.alignment={vertical:'middle',horizontal:opt.left?'left':'right',indent:opt.left?1:0,wrapText:!!opt.wrap}; c.font={bold:!!opt.bold,color:{argb:opt.color||NAVY},size:opt.size||11}; if(opt.fill) c.fill={type:'pattern',pattern:'solid',fgColor:{argb:opt.fill}}; return c; };
     let r=1;
-    band(r++,'CUENTAS DEL TRADING',18,NAVY,WHITE);
+    band(r++,'CUENTAS TRADING',18,NAVY,WHITE);
     band(r++,'Resumen de '+mLong(mes)+(mes===lastMes()?'  ·  mes en curso':'  ·  mes cerrado'),12,ACC,WHITE);
     ws.mergeCells(r,1,r,NC); ws.getCell(r,1).value='Generado el '+fdate(today())+'. La ganancia de cada socio se reparte según su porcentaje de capital en el mes.'; ws.getCell(r,1).font={italic:true,size:10,color:{argb:MUT}}; ws.getCell(r,1).alignment={indent:1}; r+=2;
 
     section(r++,'Resumen del mes');
-    const sumRows=[['Capital invertido',C,F_COP],['Ganancia del mes (COP)',gCop,F_COP],['Ganancia del mes (USD)',gUsd,F_USD],['Rendimiento del mes',C>0?gCop/C:0,F_PCT],['Reportes de ganancia',gs.length,'0']];
+    const sumRows=[['Capital invertido',C,F_COP],['Ganancia del mes (USD)',gUsd,F_USD],[(mes===lastMes()?'TRM vigente':'TRM final')+(te&&te.fecha?' ('+fdate(te.fecha)+')':''),trm,F_TRM],['Ganancia del mes (COP)',gCop,F_COP],['Rendimiento del mes',C>0?gCop/C:0,F_PCT],['Reportes de ganancia',gs.length,'0']];
     if(prev) sumRows.splice(1,0,['Cambio vs '+mLong(prev),C-sumOf(PP),'"+$"#,##0;"−$"#,##0;"$"0']);
     sumRows.forEach(([l,v,f],k)=>{ ws.mergeCells(r,1,r,2); cellf(r,1,l,null,{left:true,bold:true,fill:k%2?WHITE:SOFT}); ws.getCell(r,2).border=border; cellf(r,3,v,f,{bold:true,fill:k%2?WHITE:SOFT,color:(l.startsWith('Ganancia')||l.startsWith('Rend'))?POS:NAVY}); r++; });
     r++;
@@ -657,22 +685,21 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
 
     section(r++,'Ganancias reportadas');
     if(gs.length){
-      const cols=['#','Fecha','Ganancia (USD)','TRM','Ganancia (COP)'];
-      header(r++,[...cols.slice(0,5),'Reparto por socio','']); ws.mergeCells(r-1,6,r-1,7);
+      header(r++,['#','Fecha','Ganancia (USD)','TRM de ese día','Valor a TRM '+(mes===lastMes()?'vigente':'final'),'Reparto por socio (USD)','']); ws.mergeCells(r-1,6,r-1,7);
       gs.forEach((g,k)=>{
         const fill=k%2?WHITE:SOFT;
         cellf(r,1,'Reporte '+(k+1),null,{left:true,bold:true,fill});
         cellf(r,2,g.fecha?fdate(g.fecha):'',null,{fill});
         cellf(r,3,g.usd||0,F_USD,{fill});
         cellf(r,4,g.trm||0,F_TRM,{fill});
-        cellf(r,5,g.monto,F_COP,{fill,color:POS,bold:true});
+        cellf(r,5,Math.round((g.usd||0)*trm),F_COP,{fill,color:POS,bold:true});
         ws.mergeCells(r,6,r,7);
-        cellf(r,6,ns.map(n=>n+': $'+nf.format(Math.round(g.monto*P[n]/C))).join('\n'),null,{left:true,fill,wrap:true,size:10,color:MUT});
+        cellf(r,6,ns.map(n=>n+': US$'+nf2.format((g.usd||0)*P[n]/C)).join('\n'),null,{left:true,fill,wrap:true,size:10,color:MUT});
         ws.getRow(r).height=Math.max(20,15*ns.length);
         r++;
       });
       cellf(r,1,'TOTAL',null,{left:true,bold:true,fill:SOFT}); cellf(r,2,'',null,{fill:SOFT});
-      cellf(r,3,gUsd,F_USD,{bold:true,fill:SOFT}); cellf(r,4,'',null,{fill:SOFT});
+      cellf(r,3,gUsd,F_USD,{bold:true,fill:SOFT}); cellf(r,4,trm,F_TRM,{bold:true,fill:SOFT});
       cellf(r,5,gCop,F_COP,{bold:true,fill:SOFT,color:POS}); ws.mergeCells(r,6,r,7); cellf(r,6,'',null,{fill:SOFT});
       r++;
     } else { ws.mergeCells(r,1,r,NC); cellf(r,1,'Aún no hay reportes de ganancia este mes.',null,{left:true,color:MUT}); r++; }
@@ -694,7 +721,7 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
       });
     } else { ws.mergeCells(r,1,r,NC); cellf(r,1,prev?'Sin cambios: todos siguen con el mismo capital de '+mLong(prev)+'.':'Sin movimientos.',null,{left:true,color:MUT}); r++; }
     r++;
-    ws.mergeCells(r,1,r,NC); const ft=ws.getCell(r,1); ft.value='Valores en pesos colombianos (COP). Las ganancias en USD se convierten con la TRM de cada reporte.'; ft.font={italic:true,size:9,color:{argb:MUT}}; ft.alignment={indent:1};
+    ws.mergeCells(r,1,r,NC); const ft=ws.getCell(r,1); ft.value='Valores en pesos colombianos (COP). Todas las ganancias del mes se suman en USD y se convierten con la TRM '+(mes===lastMes()?'vigente (la del registro más reciente).':'final del mes.'); ft.font={italic:true,size:9,color:{argb:MUT}}; ft.alignment={indent:1};
     return await wb.xlsx.writeBuffer();
   }
   $('dlBtn').onclick=async()=>{
@@ -704,7 +731,7 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
       if(!isAdmin()){ try{ data=norm(await loadPublic()); }catch(e){} }
       const buf=await buildExcel(mes);
       const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='Resumen-Trading-'+mes+'-'+MESES[+mes.slice(5)-1]+'.xlsx';
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='Resumen-Cuentas-Trading-'+mes+'-'+MESES[+mes.slice(5)-1]+'.xlsx';
       document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500);
       b.textContent='Descargado';
     }catch(e){ b.textContent='No se pudo generar. Intenta de nuevo.'; }
