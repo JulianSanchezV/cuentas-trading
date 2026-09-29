@@ -52,9 +52,9 @@ section{display:grid;gap:10px}
 @media (max-width:520px){.totals{grid-template-columns:1fr 1fr}.totals > div:nth-child(3){grid-column:1/-1;border-left:0;border-top:1px solid var(--line)}}
 
 .people{display:grid;gap:10px}
-.person{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:grid;grid-template-columns:minmax(0,1.1fr) repeat(4,minmax(0,1fr));gap:8px 14px;align-items:center}
-.person .name{display:flex;align-items:center;gap:8px;font-weight:600;font-size:1.02rem;min-width:0;overflow-wrap:anywhere}
-.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.person{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:grid;grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr));gap:8px 14px;align-items:center}
+.person .name{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:700;font-size:1.22rem;text-transform:uppercase;letter-spacing:.04em;min-width:0;overflow-wrap:anywhere}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}
 .person .cell{display:grid;gap:1px;text-align:right;min-width:0}
 .person .cell .v{font-size:.98rem;overflow-wrap:anywhere}
 .sub{font-size:.72rem;color:var(--muted)}
@@ -66,7 +66,7 @@ section{display:grid;gap:10px}
 .sbtn.rm:hover{color:var(--neg);border-color:var(--neg)}
 .inline{grid-column:1/-1;background:var(--soft);border-radius:9px;padding:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;align-items:end}
 .inline p{grid-column:1/-1;margin:0;font-size:.88rem}
-@media (max-width:640px){.person{grid-template-columns:repeat(2,minmax(0,1fr))}.person .name{grid-column:1/-1}.person .cell{text-align:left}}
+@media (max-width:640px){.person{grid-template-columns:repeat(3,minmax(0,1fr))}.person .name{grid-column:1/-1}.person .cell{text-align:left}}
 
 .admin{background:var(--admin-bg);border:1px solid var(--admin);border-radius:14px;padding:16px;display:grid;gap:16px}
 .admin .block{display:grid;gap:8px}
@@ -83,11 +83,17 @@ input[type=text],input[type=date],input[type=password],select{background:var(--s
 .preview{background:var(--surface);border-radius:8px;padding:10px 12px;font-size:.88rem;display:flex;flex-wrap:wrap;gap:6px 22px}
 .preview:empty{display:none}
 .msg{font-size:.85rem;min-height:1.2em;margin:0}
+.dlbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
+.dlbar .btn{display:inline-flex;align-items:center;gap:8px}
 .openrows{display:grid;gap:8px}
-.openrow{display:grid;grid-template-columns:minmax(90px,1fr) minmax(0,1.2fr) minmax(0,1.2fr);gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+.openrow.gone{opacity:.5}
+.openrow.gone .who{text-decoration:line-through}
+.xbtn{border:1px solid var(--line);background:transparent;border-radius:7px;padding:6px 10px;font-size:.82rem;font-weight:600;cursor:pointer;color:var(--muted)}
+.xbtn:hover{color:var(--neg);border-color:var(--neg)}
+.openrow{display:grid;grid-template-columns:minmax(90px,1fr) minmax(0,1.2fr) minmax(0,1.2fr) auto;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
 .openrow .who{font-weight:600;overflow-wrap:anywhere}
 .openrow .who small{display:block;font-weight:400;color:var(--muted);font-size:.78rem}
-@media (max-width:520px){.openrow{grid-template-columns:1fr 1fr}.openrow .who{grid-column:1/-1}}
+@media (max-width:520px){.openrow{grid-template-columns:1fr 1fr auto}.openrow .who{grid-column:1/-1}}
 
 .hist{display:grid;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .item{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:4px 12px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
@@ -123,6 +129,11 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
   <section class="admin" id="admin" hidden aria-label="Panel de administración"></section>
 
   <nav class="tabs" id="tabs" aria-label="Meses"></nav>
+
+  <div class="dlbar" id="dlbar" hidden>
+    <span class="status" id="dlNote"></span>
+    <button class="btn" id="dlBtn" type="button">Descargar resumen (Excel)</button>
+  </div>
 
   <div class="totals" id="totals" aria-label="Totales"></div>
 
@@ -162,7 +173,7 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
   const MES3=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
 
-  let data={personas:[],movs:[],meses:[]}, sha=null, token=null, repo=null, busy=false, open=null, tab=null;
+  let data={personas:[],movs:[],meses:[]}, sha=null, token=null, repo=null, busy=false, open=null, tab=null, newRows=[], goneSet=new Set();
   const isAdmin=()=>!!token;
 
   /* ---------- formato ---------- */
@@ -246,7 +257,7 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
       if(!r.ok) throw new Error('http');
       const j=await r.json(); sha=j.content.sha; data=norm(next);
       setStatus('Guardado. Los demás lo ven al recargar.');
-      render(); flash(msgEl,(okText||'Guardado')+'. Guardado en GitHub.'); return true;
+      render(); flash($(msgEl&&msgEl.id)||msgEl,(okText||'Guardado')+'. Guardado en GitHub.'); return true;
     }catch(e){ flash(msgEl,'No se pudo guardar. Revisa tu conexión e intenta de nuevo.',true); setStatus(''); return false; }
     finally{ busy=false; }
   }
@@ -258,23 +269,28 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
     for(const m of capMovs()){ if(m.mes>mes) break; P[m.persona]=(P[m.persona]||0)+(m.tipo==='aporte'?m.monto:-m.monto); }
     return P;
   }
-  const gainOf=mes=>data.movs.find(m=>m.tipo==='ganancia'&&m.mes===mes)||null;
+  const gainsOf=mes=>data.movs.filter(m=>m.tipo==='ganancia'&&m.mes===mes).sort((a,b)=>(a.fecha||'')<(b.fecha||'')?-1:(a.fecha||'')>(b.fecha||'')?1:(a.creado||0)-(b.creado||0));
   function monthInfo(mes){
-    const P=capAt(mes), ns=Object.keys(P).filter(n=>P[n]>0), C=ns.reduce((a,n)=>a+P[n],0);
+    const P=capAt(mes), ns=Object.keys(P).filter(n=>P[n]>0).sort((a,b)=>P[b]-P[a]||a.localeCompare(b)), C=ns.reduce((a,n)=>a+P[n],0);
     const i=data.meses.indexOf(mes), prev=i>0?data.meses[i-1]:null, PP=prev?capAt(prev):{};
-    const g=gainOf(mes), parts={};
-    if(g&&C>0) ns.forEach(n=>parts[n]=g.monto*P[n]/C);
-    return {mes,P,ns,C,prev,PP,g,parts};
-  }
-  function accumulated(){
-    const A={};
-    for(const mes of data.meses){ const {parts,g}=monthInfo(mes); for(const n in parts){ A[n]=A[n]||{cop:0,usd:0}; A[n].cop+=parts[n]; if(g.usd) A[n].usd+=g.usd*parts[n]/g.monto; } }
-    return A;
+    const gs=gainsOf(mes), gCop=gs.reduce((a,g)=>a+g.monto,0), gUsd=gs.reduce((a,g)=>a+(g.usd||0),0);
+    const parts={}, partsUsd={};
+    if(C>0) ns.forEach(n=>{ parts[n]=gCop*P[n]/C; partsUsd[n]=gUsd*P[n]/C; });
+    return {mes,P,ns,C,prev,PP,gs,gCop,gUsd,parts,partsUsd};
   }
   const lastMes=()=>data.meses[data.meses.length-1]||null;
   const personOrder=()=>[...data.personas].sort((a,b)=>(a.creado||0)-(b.creado||0));
   const colorOf=n=>{const i=personOrder().findIndex(p=>p.nombre===n);return COLORS[(i<0?0:i)%COLORS.length];};
   const activos=()=>personOrder().filter(p=>p.activo!==false);
+  const byCap=(list,P)=>list.sort((a,b)=>((P[b.nombre]||0)-(P[a.nombre]||0))||a.nombre.localeCompare(b.nombre));
+  const sumOf=P=>Object.values(P).reduce((a,v)=>a+Math.max(0,v),0);
+  function capHistory(mes){ // movimientos de capital del mes con antes/después
+    const run={}; for(const m of capMovs()){ if(m.mes>=mes) break; run[m.persona]=(run[m.persona]||0)+(m.tipo==='aporte'?m.monto:-m.monto); }
+    return capMovs().filter(x=>x.mes===mes).map(m=>{
+      const a=run[m.persona]||0, b=a+(m.tipo==='aporte'?m.monto:-m.monto); run[m.persona]=b;
+      return {m,a,b,why:m.nota||(a===0?'Inversión inicial':(m.tipo==='aporte'?'Aporte':'Retiro')+' al inicio de '+mLong(mes))};
+    });
+  }
 
   /* ---------- pintar ---------- */
   function setStatus(t){ $('status').textContent=t||(isAdmin()?'Estás editando. Cada cambio se guarda en GitHub.':'Cada mes se reparte la ganancia según lo que cada uno tenía invertido ese mes.'); }
@@ -284,8 +300,11 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
     const adm=isAdmin();
     $('badge').hidden=!adm; $('logout').hidden=!adm; $('adminLink').hidden=adm; if(adm) $('login').hidden=true;
     if(!tab||(tab!=='total'&&!data.meses.includes(tab))) tab=lastMes()||'total';
-    $('tabs').innerHTML=data.meses.map(m=>`<button class="tab" type="button" data-tab="${m}" aria-selected="${tab===m}">${mShort(m)}${gainOf(m)?'':'<span class="dotc" title="Mes en curso"></span>'}</button>`).join('')
+    const last=lastMes();
+    $('tabs').innerHTML=data.meses.map(m=>`<button class="tab" type="button" data-tab="${m}" aria-selected="${tab===m}">${mShort(m)}${m===last?'<span class="dotc" title="Mes en curso"></span>':''}</button>`).join('')
       +(data.meses.length?`<button class="tab" type="button" data-tab="total" aria-selected="${tab==='total'}">Total</button>`:'');
+    $('dlbar').hidden=!(tab&&tab!=='total');
+    if(tab&&tab!=='total'){ $('dlBtn').textContent='Descargar resumen de '+mLong(tab)+' (Excel)'; $('dlNote').textContent=tab===last?'Mes en curso: el archivo incluye lo registrado hasta hoy.':'Mes cerrado.'; }
     renderAdmin();
     if(tab==='total') renderTotal(); else renderMonth(tab);
   }
@@ -293,22 +312,22 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
 
   function renderMonth(mes){
     if(!mes){ $('totals').innerHTML=''; $('people').innerHTML=`<div class="empty">${isAdmin()?'Agrega el primer socio desde el panel de arriba.':'Todavía no hay socios registrados.'}</div>`; $('hist').innerHTML='<div class="empty">Aún no hay registros.</div>'; $('peopleTitle').textContent='Socios'; $('histTitle').textContent='Movimientos'; return; }
-    const {P,ns,C,prev,PP,g,parts}=monthInfo(mes), adm=isAdmin(), editable=adm&&mes===lastMes()&&!g;
+    const {P,C,prev,PP,gs,gCop,gUsd,parts,partsUsd}=monthInfo(mes), adm=isAdmin(), editable=adm&&mes===lastMes()&&!gs.length;
     $('totals').innerHTML=`
       <div><span class="lbl">Capital de ${mLong(mes)}</span><span class="big num">${cop(C)}</span>${prev?`<span class="sub num">${C===sumOf(PP)?'Igual que '+mLong(prev):scop(C-sumOf(PP))+' vs '+mLong(prev)}</span>`:''}</div>
-      <div><span class="lbl">Ganancia del mes</span><span class="big num pos">${g?cop(g.monto):'—'}</span><span class="sub num">${g?(g.usd?usd(g.usd)+' × TRM '+nf2.format(g.trm):''):'Pendiente'}</span></div>
-      <div><span class="lbl">Rendimiento</span><span class="big num">${g&&C>0?pct(g.monto/C):'—'}</span></div>`;
+      <div><span class="lbl">Ganancia del mes</span><span class="big num pos">${gs.length?cop(gCop):'—'}</span><span class="sub num">${gs.length?(gUsd?usd(gUsd)+' · ':'')+gs.length+(gs.length===1?' reporte':' reportes'):'Sin reportes aún'}</span></div>
+      <div><span class="lbl">Rendimiento</span><span class="big num">${gs.length&&C>0?pct(gCop/C):'—'}</span></div>`;
     $('peopleTitle').textContent='Socios en '+mLong(mes);
-    const list=personOrder().filter(p=>(P[p.nombre]||0)>0||(PP[p.nombre]||0)>0||(editable&&p.activo!==false));
+    const list=byCap(personOrder().filter(p=>(P[p.nombre]||0)>0||(editable&&p.activo!==false)),P);
     $('people').innerHTML=list.length?list.map(p=>{
       const n=p.nombre, cap=P[n]||0, before=PP[n]||0, sh=C>0?cap/C:0, col=colorOf(n), part=parts[n];
-      const chg=!prev?'':(cap===before?'Igual que '+MES3[+prev.slice(5)-1]:(before===0?'Entra este mes':(cap===0?'Salió este mes':scop(cap-before)+' vs '+MES3[+prev.slice(5)-1])));
+      const chg=!prev?'':(cap===before?'Igual que '+MES3[+prev.slice(5)-1]:(before===0?'Entra este mes':scop(cap-before)+' vs '+MES3[+prev.slice(5)-1]));
       let extra='';
       if(editable&&p.activo!==false){
-        extra=`<div class="acts"><button class="sbtn add" type="button" data-do="cambiar" data-id="${esc(p.id)}">Cambiar capital de ${mLong(mes).split(' ')[0]}</button><button class="sbtn rm" type="button" data-do="quitar-ask" data-id="${esc(p.id)}">Quitar persona</button></div>`;
+        extra=`<div class="acts"><button class="sbtn add" type="button" data-do="cambiar" data-id="${esc(p.id)}">Cambiar capital de ${mLong(mes).split(' ')[0]}</button><button class="sbtn rm" type="button" data-do="quitar-ask" data-id="${esc(p.id)}">Eliminar persona</button></div>`;
         if(open&&open.id===p.id){
           if(open.mode==='quitar') extra+=`<div class="inline"><p>${esc(n)} sale del fondo desde ${mLong(mes)}${cap>0?' y se registra el retiro de <b class="num">'+cop(cap)+'</b>':''}. Su historial se conserva.</p>
-            <button class="btn danger" type="button" data-do="quitar" data-id="${esc(p.id)}">Quitar persona</button><button class="btn ghost" type="button" data-do="cancel">Cancelar</button><p class="msg" id="iMsg"></p></div>`;
+            <button class="btn danger" type="button" data-do="quitar" data-id="${esc(p.id)}">Eliminar persona</button><button class="btn ghost" type="button" data-do="cancel">Cancelar</button><p class="msg" id="iMsg"></p></div>`;
           else extra+=`<div class="inline"><div class="field"><label for="iMonto">Nuevo capital total (COP)</label><input id="iMonto" type="text" class="num money" inputmode="numeric" value="${nf.format(cap)}"></div>
             <button class="btn" type="button" data-do="guardar" data-id="${esc(p.id)}">Guardar</button><button class="btn ghost" type="button" data-do="cancel">Cancelar</button><p class="msg" id="iMsg"></p></div>`;
         }
@@ -317,44 +336,38 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
         <div class="name"><span class="dot" style="background:${col}"></span>${esc(n)}</div>
         <div class="cell"><span class="lbl">Invertido</span><span class="v num">${cop(cap)}</span>${chg?`<span class="sub num">${chg}</span>`:''}</div>
         <div class="cell"><span class="lbl">Porcentaje</span><span class="v num">${pct(sh)}</span></div>
-        <div class="cell"><span class="lbl">Ganancia del mes</span><span class="v num pos">${part!=null?cop(part):'—'}</span>${part!=null&&g.usd?`<span class="sub num">${usd(g.usd*part/g.monto)}</span>`:''}</div>
-        <div class="cell"><span class="lbl">Acumulado</span><span class="v num">${cop(accTo(n,mes))}</span><span class="sub">hasta ${MES3[+mes.slice(5)-1]}</span></div>
+        <div class="cell"><span class="lbl">Ganancia del mes</span><span class="v num pos">${gs.length&&part!=null?cop(part):'—'}</span>${gs.length&&part!=null&&gUsd?`<span class="sub num">${usd(partsUsd[n])}</span>`:''}</div>
         <div class="bar"><i style="width:${(sh*100).toFixed(2)}%;background:${col}"></i></div>${extra}</div>`;
     }).join(''):'<div class="empty">No hay socios con capital en este mes.</div>';
 
     $('histTitle').textContent='Movimientos de '+mLong(mes);
-    const run={}; for(const m of capMovs()){ if(m.mes>=mes) break; run[m.persona]=(run[m.persona]||0)+(m.tipo==='aporte'?m.monto:-m.monto); }
     const items=[];
-    for(const m of capMovs().filter(x=>x.mes===mes)){
-      const a=run[m.persona]||0, b=a+(m.tipo==='aporte'?m.monto:-m.monto); run[m.persona]=b;
-      const why=m.nota||(a===0?'Inversión inicial':(m.tipo==='aporte'?'Aporte':'Retiro')+' al inicio de '+mLong(mes));
+    for(const {m,a,b,why} of capHistory(mes)){
       items.push({m,html:`<span class="pill ${m.tipo==='aporte'?'a':'r'}">${m.tipo==='aporte'?'Aporte':'Retiro'}</span>
         <div class="what">${esc(m.persona)} · ${esc(why)}<small class="num">Capital ${cop(a)} → ${cop(b)}</small></div>
         <span class="amt num ${m.tipo==='aporte'?'':'neg'}">${m.tipo==='aporte'?'+':'−'}${cop(m.monto)}</span>`});
     }
-    const same=personOrder().filter(p=>prev&&(PP[p.nombre]||0)>0&&!capMovs().some(x=>x.mes===mes&&x.persona===p.nombre));
+    const ch=new Set(capHistory(mes).map(x=>x.m.persona));
+    const same=personOrder().filter(p=>prev&&(PP[p.nombre]||0)>0&&!ch.has(p.nombre));
     if(same.length) items.push({m:null,html:`<span class="pill i">Sin cambio</span><div class="what">${same.map(p=>esc(p.nombre)).join(', ')}<small>Siguen con el mismo capital de ${mLong(prev)}</small></div><span></span>`});
-    if(g){
-      const det=Object.keys(parts).map(n=>esc(n)+' '+cop(parts[n])+(g.usd?' ('+usd(g.usd*parts[n]/g.monto)+')':'')).join(' · ');
-      items.push({m:g,html:`<span class="pill g">Ganancia</span><div class="what">${g.fecha?fdate(g.fecha)+' · ':''}${g.usd?usd(g.usd)+' × TRM '+nf2.format(g.trm):''}${C>0?' · '+pct(g.monto/C):''}<small class="num">${det||'Sin capital registrado'}</small></div><span class="amt num pos">${cop(g.monto)}</span>`});
-    }
-    $('hist').innerHTML=items.length?items.map(it=>`<div class="item">${it.html}${adm&&it.m?`<button class="del" type="button" data-del="${esc(it.m.id)}">Borrar</button>`:'<span></span>'}</div>`).join(''):'<div class="empty">Sin movimientos este mes.</div>';
+    gs.forEach((g,k)=>{
+      const det=Object.keys(parts).sort((x,y)=>P[y]-P[x]).map(n=>esc(n)+' '+cop(g.monto*P[n]/C)+(g.usd?' ('+usd(g.usd*P[n]/C)+')':'')).join(' · ');
+      items.push({m:g,html:`<span class="pill g">Ganancia ${k+1}</span><div class="what">${g.fecha?fdate(g.fecha)+' · ':''}${g.usd?usd(g.usd)+' × TRM '+nf2.format(g.trm):''}<small class="num">${det||'Sin capital registrado'}</small></div><span class="amt num pos">${cop(g.monto)}</span>`});
+    });
+    $('hist').innerHTML=items.length?items.map(it=>`<div class="item">${it.html}${isAdmin()&&it.m?`<button class="del" type="button" data-del="${esc(it.m.id)}">Borrar</button>`:'<span></span>'}</div>`).join(''):'<div class="empty">Sin movimientos este mes.</div>';
     if(open&&open.mode==='cambiar'){ const i=$('iMonto'); if(i){ i.focus(); i.select(); } }
   }
-  const sumOf=P=>Object.values(P).reduce((a,v)=>a+Math.max(0,v),0);
-  function accTo(n,mes){ let s=0; for(const m of data.meses){ if(m>mes) break; const p=monthInfo(m).parts[n]; if(p) s+=p; } return s; }
 
   function renderTotal(){
-    const last=lastMes(), P=last?capAt(last):{}, A=accumulated(), C=sumOf(P);
-    const gTot=data.meses.reduce((a,m)=>{const g=gainOf(m);return a+(g?g.monto:0);},0);
-    const uTot=data.meses.reduce((a,m)=>{const g=gainOf(m);return a+(g&&g.usd?g.usd:0);},0);
-    const nG=data.meses.filter(m=>gainOf(m)).length;
+    const last=lastMes(), P=last?capAt(last):{}, C=sumOf(P), A={};
+    let gTot=0,uTot=0;
+    for(const m of data.meses){ const mi=monthInfo(m); gTot+=mi.gCop; uTot+=mi.gUsd; for(const n in mi.parts){ A[n]=A[n]||{cop:0,usd:0}; A[n].cop+=mi.parts[n]; A[n].usd+=mi.partsUsd[n]; } }
     $('totals').innerHTML=`
       <div><span class="lbl">Capital actual</span><span class="big num">${cop(C)}</span><span class="sub">${last?mCap(last):''}</span></div>
       <div><span class="lbl">Ganancia acumulada</span><span class="big num pos">${cop(gTot)}</span><span class="sub num">${uTot?usd(uTot):''}</span></div>
-      <div><span class="lbl">Meses con ganancia</span><span class="big num">${nG}</span><span class="sub">${data.meses.length?mCap(data.meses[0])+' – '+mCap(last):''}</span></div>`;
+      <div><span class="lbl">Meses</span><span class="big num">${data.meses.length}</span><span class="sub">${data.meses.length?mCap(data.meses[0])+' – '+mCap(last):''}</span></div>`;
     $('peopleTitle').textContent='Resumen por persona';
-    const list=personOrder().filter(p=>A[p.nombre]||(P[p.nombre]||0)>0);
+    const list=byCap(personOrder().filter(p=>A[p.nombre]||(P[p.nombre]||0)>0),P);
     $('people').innerHTML=list.length?list.map(p=>{
       const n=p.nombre, cap=P[n]||0, a=A[n]||{cop:0,usd:0}, col=colorOf(n), sh=C>0?cap/C:0;
       return `<div class="person">
@@ -362,11 +375,10 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
         <div class="cell"><span class="lbl">Capital actual</span><span class="v num">${cop(cap)}</span></div>
         <div class="cell"><span class="lbl">Porcentaje actual</span><span class="v num">${pct(sh)}</span></div>
         <div class="cell"><span class="lbl">Ganancia total</span><span class="v num pos">${cop(a.cop)}</span>${a.usd?`<span class="sub num">${usd(a.usd)}</span>`:''}</div>
-        <div class="cell"><span class="lbl">Rend. sobre capital</span><span class="v num">${cap>0?pct(a.cop/cap):'—'}</span></div>
         <div class="bar"><i style="width:${(sh*100).toFixed(2)}%;background:${col}"></i></div></div>`;
     }).join(''):'<div class="empty">Todavía no hay socios registrados.</div>';
     $('histTitle').textContent='Ganancia por mes';
-    const rows=[...data.meses].reverse().map(m=>{const {g,C}=monthInfo(m);return `<div class="item"><span class="pill ${g?'g':'i'}">${mShort(m)}</span><div class="what">Capital ${cop(C)}<small class="num">${g?(g.usd?usd(g.usd)+' × TRM '+nf2.format(g.trm)+' · ':'')+'rendimiento '+(C>0?pct(g.monto/C):'—'):'Ganancia pendiente'}</small></div><span class="amt num ${g?'pos':'muted'}">${g?cop(g.monto):'—'}</span><span></span></div>`;});
+    const rows=[...data.meses].reverse().map(m=>{const {gs,C,gCop,gUsd}=monthInfo(m);return `<div class="item"><span class="pill ${gs.length?'g':'i'}">${mShort(m)}</span><div class="what">Capital ${cop(C)}<small class="num">${gs.length?(gUsd?usd(gUsd)+' · ':'')+gs.length+(gs.length===1?' reporte':' reportes')+' · rendimiento '+(C>0?pct(gCop/C):'—'):'Sin reportes aún'}</small></div><span class="amt num ${gs.length?'pos':'muted'}">${gs.length?cop(gCop):'—'}</span><span></span></div>`;});
     $('hist').innerHTML=rows.join('')||'<div class="empty">Aún no hay meses.</div>';
   }
 
@@ -375,41 +387,53 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
     const el=$('admin');
     if(!isAdmin()){ el.hidden=true; el.innerHTML=''; return; }
     el.hidden=false;
-    const cur=lastMes(), g=cur?gainOf(cur):null;
+    const cur=lastMes(), gs=cur?gainsOf(cur):[];
     let h='';
     if(!cur){
       h+=`<div class="block"><h3>Empezar: primer mes</h3><p class="note">Elige el mes y agrega a cada socio con lo que invirtió.</p>
         <div class="row"><div class="field"><label for="fMes">Mes</label><input id="fMes" type="text" placeholder="2026-09" value="${today().slice(0,7)}"></div></div></div>`;
     }
-    if(cur&&!g){
-      h+=`<div class="block"><h3>Ganancia de ${mLong(cur)}</h3>
+    if(cur){
+      const {gCop}=monthInfo(cur);
+      h+=`<div class="block"><h3>Agregar ganancia a ${mLong(cur)}</h3>
+        <p class="note">${gs.length?'Llevas '+gs.length+(gs.length===1?' reporte':' reportes')+' este mes por '+cop(gCop)+'. La nueva ganancia se suma.':'Registra cada reporte semanal; se van sumando en el mes.'}</p>
         <div class="row">
-          <div class="field"><label for="gFecha">Fecha</label><input id="gFecha" type="date" value="${today()}"></div>
-          <div class="field"><label for="gUsd">Ganancia total (USD)</label><input id="gUsd" type="text" class="num" inputmode="decimal" placeholder="350,50"></div>
+          <div class="field"><label for="gFecha">Fecha del reporte</label><input id="gFecha" type="date" value="${today()}"></div>
+          <div class="field"><label for="gUsd">Ganancia (USD)</label><input id="gUsd" type="text" class="num" inputmode="decimal" placeholder="350,50"></div>
           <div class="field"><label for="gTrm">TRM del día</label><input id="gTrm" type="text" class="num" inputmode="decimal" placeholder="4.050,25"></div>
-          <button class="btn" id="gSave" type="button">Repartir y guardar</button>
+          <button class="btn" id="gSave" type="button">Sumar ganancia</button>
         </div><div class="preview" id="gPrev"></div><p class="msg" id="gMsg"></p></div>`;
     }
-    if(!cur||!g){
+    if(!cur||!gs.length){
       h+=`<div class="block"><h3>Agregar persona${cur?' en '+mLong(cur):''}</h3>
         <div class="row">
           <div class="field"><label for="pNombre">Nombre</label><input id="pNombre" type="text"></div>
           <div class="field"><label for="pMonto">Capital (COP)</label><input id="pMonto" type="text" class="num money" inputmode="numeric" placeholder="5.000.000"></div>
           <button class="btn" id="pSave" type="button">Agregar</button>
         </div><p class="msg" id="pMsg"></p></div>`;
+    } else {
+      h+=`<div class="block"><p class="note">${mCap(cur)} ya tiene ganancias, así que su capital quedó fijo. Los cambios de capital y de socios se hacen al abrir el mes siguiente.</p></div>`;
     }
     if(cur){
-      const nx=mNext(cur), P=capAt(cur), act=activos().filter(p=>(P[p.nombre]||0)>0);
+      const nx=mNext(cur), P=capAt(cur), act=byCap(activos().filter(p=>(P[p.nombre]||0)>0),P);
       h+=`<div class="block"><h3>Abrir ${mLong(nx)}</h3>
-        <p class="note">${g?mCap(cur)+' ya está cerrado. ':'Aún no registras la ganancia de '+mLong(cur)+'. '}Para cada socio elige si sigue con el mismo capital o con otro valor.</p>
-        <div class="openrows">${act.map(p=>`<div class="openrow" data-n="${esc(p.nombre)}">
+        <p class="note">Para cada socio elige si sigue con el mismo capital o con otro valor. También puedes eliminar socios o agregar nuevos.</p>
+        <div class="openrows" id="oRows">${act.map(p=>`<div class="openrow${goneSet.has(p.nombre)?' gone':''}" data-n="${esc(p.nombre)}">
           <div class="who">${esc(p.nombre)}<small class="num">Hoy ${cop(P[p.nombre])}</small></div>
-          <select class="oSel" aria-label="Capital de ${esc(p.nombre)}"><option value="same">Mismo capital</option><option value="new">Otro valor</option><option value="out">Sale del fondo</option></select>
+          <select class="oSel" aria-label="Capital de ${esc(p.nombre)}"${goneSet.has(p.nombre)?' disabled':''}><option value="same">Mismo capital</option><option value="new">Otro valor</option></select>
           <input class="oVal num money" type="text" inputmode="numeric" placeholder="Nuevo capital" aria-label="Nuevo capital de ${esc(p.nombre)}" hidden>
-        </div>`).join('')||'<p class="note">No hay socios con capital.</p>'}</div>
+          <button class="xbtn" type="button" data-gone="${esc(p.nombre)}">${goneSet.has(p.nombre)?'Mantener':'Eliminar'}</button>
+        </div>`).join('')}
+        ${newRows.map((r,k)=>`<div class="openrow nrow" data-k="${k}">
+          <input class="nName" type="text" placeholder="Nombre del nuevo socio" aria-label="Nombre del nuevo socio" value="${esc(r.n)}">
+          <input class="nVal num money" type="text" inputmode="numeric" placeholder="Capital (COP)" aria-label="Capital del nuevo socio" value="${esc(r.v)}">
+          <span class="sub">Nuevo socio</span>
+          <button class="xbtn" type="button" data-nrm="${k}">Quitar</button>
+        </div>`).join('')}</div>
+        <div class="row"><button class="btn ghost" id="oAdd" type="button">+ Agregar socio nuevo</button></div>
         <div class="preview" id="oPrev"></div>
         <div class="row"><button class="btn" id="oSave" type="button">Abrir ${mLong(nx)}</button></div><p class="msg" id="oMsg"></p></div>`;
-      if(!g&&data.meses.length>1) h+=`<div class="block"><h3>¿Abriste ${mLong(cur)} por error?</h3><p class="note">Se borra ${mLong(cur)} con sus cambios de capital y vuelves a ${mLong(data.meses[data.meses.length-2])}.</p>
+      if(!gs.length&&data.meses.length>1) h+=`<div class="block"><h3>¿Abriste ${mLong(cur)} por error?</h3><p class="note">Se borra ${mLong(cur)} con sus cambios de capital y vuelves a ${mLong(data.meses[data.meses.length-2])}.</p>
         <div class="row"><button class="btn ghost" id="uSave" type="button">Deshacer ${mLong(cur)}</button></div><p class="msg" id="uMsg"></p></div>`;
     }
     el.innerHTML=h;
@@ -436,17 +460,16 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
       const pv=()=>{
         const u=parseDec($('gUsd').value), t=parseDec($('gTrm').value), v=(u>0&&t>0)?Math.round(u*t):NaN;
         if(!(v>0)){ $('gPrev').innerHTML=''; return; }
-        const {ns,P,C}=monthInfo(cur);
-        $('gPrev').innerHTML=`<span>Total <b class="num pos">${cop(v)}</b> <span class="muted">(${usd(u)})</span></span>`+(C>0?ns.map(n=>`<span>${esc(n)} (${pct(P[n]/C)}) <b class="num">${cop(v*P[n]/C)}</b> <span class="muted num">${usd(u*P[n]/C)}</span></span>`).join('')+`<span class="muted">Rendimiento <b class="num">${pct(v/C)}</b></span>`:'<span class="muted">No hay capital en este mes.</span>');
+        const {ns,P,C,gCop}=monthInfo(cur);
+        $('gPrev').innerHTML=`<span>Este reporte <b class="num pos">${cop(v)}</b> <span class="muted">(${usd(u)})</span></span>`+(C>0?ns.map(n=>`<span>${esc(n)} (${pct(P[n]/C)}) <b class="num">${cop(v*P[n]/C)}</b> <span class="muted num">${usd(u*P[n]/C)}</span></span>`).join('')+`<span class="muted">Total del mes quedaría en <b class="num">${cop(gCop+v)}</b></span>`:'<span class="muted">No hay capital en este mes.</span>');
       };
       ['gUsd','gTrm'].forEach(id=>$(id).addEventListener('input',pv));
       $('gSave').onclick=async()=>{
         const m=$('gMsg'), u=parseDec($('gUsd').value), t=parseDec($('gTrm').value), f=$('gFecha').value;
-        if(!(u>0)) return flash(m,'Escribe la ganancia total en dólares.',true);
+        if(!(u>0)) return flash(m,'Escribe la ganancia en dólares.',true);
         if(!(t>0)) return flash(m,'Escribe la TRM del día.',true);
-        if(gainOf(cur)) return flash(m,mCap(cur)+' ya tiene ganancia registrada.',true);
         const v=Math.round(u*t); $('gSave').disabled=true;
-        const ok=await save(d=>d.movs.push({id:uid(),tipo:'ganancia',mes:cur,fecha:f||today(),usd:u,trm:t,monto:v,creado:Date.now()}),'Ganancia de '+mLong(cur)+' '+cop(v),m);
+        const ok=await save(d=>d.movs.push({id:uid(),tipo:'ganancia',mes:cur,fecha:f||today(),usd:u,trm:t,monto:v,creado:Date.now()}),'Ganancia sumada a '+mLong(cur)+': '+cop(v),m);
         if(!ok&&$('gSave')) $('gSave').disabled=false;
       };
     }
@@ -458,60 +481,85 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
         if(!n) return flash(m,'Escribe el nombre.',true);
         if(!(v>0)) return flash(m,'Escribe el capital en pesos.',true);
         const P=capAt(mes);
-        if((P[n]||0)>0||activos().some(p=>p.nombre.toLowerCase()===n.toLowerCase()&&(P[p.nombre]||0)>0)) return flash(m,n+' ya tiene capital en este mes. Usa "Cambiar capital".',true);
+        if(Object.keys(P).some(k=>k.toLowerCase()===n.toLowerCase()&&P[k]>0)) return flash(m,n+' ya tiene capital en este mes. Usa "Cambiar capital".',true);
         $('pSave').disabled=true;
         const ok=await save(d=>{
           const prev=d.personas.find(p=>p.nombre.toLowerCase()===n.toLowerCase()), name=prev?prev.nombre:n;
           if(prev) prev.activo=true; else d.personas.push({id:uid(),nombre:n,activo:true,creado:Date.now()});
           if(!d.meses.includes(mes)) d.meses.push(mes);
-          d.movs.push({id:uid(),tipo:'aporte',persona:name,mes,fecha:today(),monto:v,nota:(P[name]||0)===0&&!capMovs().some(x=>x.persona===name)?'Inversión inicial':'Entra al fondo en '+mLong(mes),creado:Date.now()});
+          d.movs.push({id:uid(),tipo:'aporte',persona:name,mes,fecha:today(),monto:v,nota:!capMovs().some(x=>x.persona===name)?'Inversión inicial':'Entra al fondo en '+mLong(mes),creado:Date.now()});
         },'Nueva persona: '+n+' con '+cop(v),m);
         if(!ok&&$('pSave')) $('pSave').disabled=false;
       };
     }
     if($('oSave')){
       const nx=mNext(cur), P=capAt(cur);
+      const syncNew=()=>{ document.querySelectorAll('.nrow').forEach(r=>{ const k=+r.dataset.k; newRows[k]={n:r.querySelector('.nName').value,v:r.querySelector('.nVal').value}; }); };
       const collect=()=>{
-        const out=[]; let err=null;
-        document.querySelectorAll('.openrow').forEach(r=>{
-          const n=r.dataset.n, sel=r.querySelector('.oSel').value, a=P[n]||0;
+        const out=[], add=[]; let err=null;
+        document.querySelectorAll('.openrow:not(.nrow)').forEach(r=>{
+          const n=r.dataset.n, a=P[n]||0;
+          if(goneSet.has(n)){ out.push({n,a,b:0}); return; }
           let b=a;
-          if(sel==='new'){ b=parseInt0(r.querySelector('.oVal').value); if(!(b>=0)) err='Escribe el nuevo capital de '+n+'.'; }
-          if(sel==='out') b=0;
-          out.push({n,a,b,sel});
+          if(r.querySelector('.oSel').value==='new'){ b=parseInt0(r.querySelector('.oVal').value); if(!(b>0)) err='Escribe el nuevo capital de '+n+' (mayor que cero). Para sacarlo usa "Eliminar".'; }
+          out.push({n,a,b});
         });
-        return {out,err};
+        syncNew();
+        const names=new Set(Object.keys(P).filter(k=>P[k]>0).map(k=>k.toLowerCase()));
+        newRows.forEach(r=>{
+          const n=(r.n||'').trim(), v=parseInt0(r.v);
+          if(!n&&!r.v) return;
+          if(!n){ err='Escribe el nombre del nuevo socio.'; return; }
+          if(!(v>0)){ err='Escribe el capital de '+n+'.'; return; }
+          if(names.has(n.toLowerCase())){ err=n+' ya es socio.'; return; }
+          names.add(n.toLowerCase()); add.push({n,b:v});
+        });
+        return {out,add,err};
       };
       const pv=()=>{
-        const {out}=collect(), T=out.reduce((s,x)=>s+(isFinite(x.b)?x.b:0),0);
-        $('oPrev').innerHTML=out.map(x=>`<span>${esc(x.n)}: <b class="num">${isFinite(x.b)?cop(x.b):'—'}</b>${isFinite(x.b)&&x.b!==x.a?` <span class="num ${x.b>x.a?'pos':'neg'}">${scop(x.b-x.a)}</span>`:''}${isFinite(x.b)&&T>0?` <span class="muted num">${pct(x.b/T)}</span>`:''}</span>`).join('')+`<span class="muted">Total ${mLong(nx)} <b class="num">${cop(T)}</b></span>`;
+        const {out,add}=collect(), all=[...out.filter(x=>isFinite(x.b)),...add.map(x=>({n:x.n,a:0,b:x.b}))], T=all.reduce((s,x)=>s+x.b,0);
+        $('oPrev').innerHTML=all.sort((x,y)=>y.b-x.b).map(x=>`<span>${esc(x.n)}: <b class="num">${cop(x.b)}</b>${x.b!==x.a?` <span class="num ${x.b>x.a?'pos':'neg'}">${x.a===0?'nuevo':x.b===0?'sale':scop(x.b-x.a)}</span>`:''}${T>0&&x.b>0?` <span class="muted num">${pct(x.b/T)}</span>`:''}</span>`).join('')+`<span class="muted">Total ${mLong(nx)} <b class="num">${cop(T)}</b></span>`;
       };
-      document.querySelectorAll('.openrow').forEach(r=>{
+      document.querySelectorAll('.openrow:not(.nrow)').forEach(r=>{
         const s=r.querySelector('.oSel'), i=r.querySelector('.oVal');
         s.addEventListener('change',()=>{ i.hidden=s.value!=='new'; if(!i.hidden){ i.value=nf.format(P[r.dataset.n]||0); i.focus(); i.select(); } pv(); });
         i.addEventListener('input',pv);
       });
+      document.querySelectorAll('.nrow input').forEach(i=>i.addEventListener('input',pv));
+      $('oRows').addEventListener('click',e=>{
+        const g=e.target.closest('[data-gone]'), q=e.target.closest('[data-nrm]');
+        if(g){ syncNew(); const n=g.dataset.gone; goneSet.has(n)?goneSet.delete(n):goneSet.add(n); renderAdmin(); }
+        if(q){ syncNew(); newRows.splice(+q.dataset.nrm,1); renderAdmin(); }
+      });
+      $('oAdd').onclick=()=>{ syncNew(); newRows.push({n:'',v:''}); renderAdmin(); const ns=document.querySelectorAll('.nName'); if(ns.length) ns[ns.length-1].focus(); };
       pv();
       $('oSave').onclick=async()=>{
-        const m=$('oMsg'), {out,err}=collect();
+        const m=$('oMsg'), {out,add,err}=collect();
         if(err) return flash(m,err,true);
+        if(!out.some(x=>x.b>0)&&!add.length) return flash(m,'El mes debe tener al menos un socio con capital.',true);
         $('oSave').disabled=true;
+        const t0=Date.now();
         const ok=await save(d=>{
           d.meses.push(nx);
-          for(const x of out){
-            if(x.b===x.a) continue;
+          out.forEach((x,k)=>{
+            if(x.b===x.a) return;
             const diff=x.b-x.a;
             d.movs.push({id:uid(),tipo:diff>0?'aporte':'retiro',persona:x.n,mes:nx,fecha:today(),monto:Math.abs(diff),
-              nota:x.b===0?'Sale del fondo en '+mLong(nx):(diff>0?'Aumenta su capital en ':'Reduce su capital en ')+mLong(nx),creado:Date.now()});
+              nota:x.b===0?'Sale del fondo en '+mLong(nx):(diff>0?'Aumenta su capital en ':'Reduce su capital en ')+mLong(nx),creado:t0+k});
             if(x.b===0){ const p=d.personas.find(y=>y.nombre===x.n); if(p) p.activo=false; }
-          }
+          });
+          add.forEach((x,k)=>{
+            const prev=d.personas.find(p=>p.nombre.toLowerCase()===x.n.toLowerCase()), name=prev?prev.nombre:x.n;
+            if(prev) prev.activo=true; else d.personas.push({id:uid(),nombre:x.n,activo:true,creado:t0+100+k});
+            d.movs.push({id:uid(),tipo:'aporte',persona:name,mes:nx,fecha:today(),monto:x.b,nota:prev?'Vuelve al fondo en '+mLong(nx):'Entra al fondo en '+mLong(nx),creado:t0+100+k});
+          });
         },'Abrir '+mLong(nx),m);
-        if(ok){ tab=nx; render(); } else if($('oSave')) $('oSave').disabled=false;
+        if(ok){ newRows=[]; goneSet=new Set(); tab=nx; render(); } else if($('oSave')) $('oSave').disabled=false;
       };
     }
   }
 
-  /* ---------- acciones por persona (mes abierto) ---------- */
+  /* ---------- acciones por persona (mes abierto, sin ganancias) ---------- */
   $('people').addEventListener('click',async e=>{
     const b=e.target.closest('[data-do]'); if(!b||!isAdmin()) return;
     const a=b.dataset.do, p=data.personas.find(x=>x.id===b.dataset.id), cur=lastMes();
@@ -521,7 +569,7 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
     const m=$('iMsg'), cap=capAt(cur)[p.nombre]||0;
     if(a==='guardar'){
       const v=parseInt0($('iMonto').value);
-      if(!(v>=0)) return flash(m,'Escribe el nuevo capital en pesos.',true);
+      if(!(v>0)) return flash(m,'Escribe el nuevo capital en pesos. Para sacarlo usa "Eliminar persona".',true);
       if(v===cap){ open=null; render(); return; }
       const diff=v-cap; b.disabled=true;
       const ok=await save(d=>d.movs.push({id:uid(),tipo:diff>0?'aporte':'retiro',persona:p.nombre,mes:cur,fecha:today(),monto:Math.abs(diff),
@@ -548,6 +596,120 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
   });
 
   document.addEventListener('focusout',e=>{ const el=e.target; if(el.classList&&el.classList.contains('money')){ const v=parseInt0(el.value); if(v>=0&&el.value!=='') el.value=nf.format(v); } });
+
+  /* ---------- resumen en Excel (se genera al descargar, con los datos de ese momento) ---------- */
+  let xlLib=null;
+  function loadExcelJS(){
+    if(window.ExcelJS) return Promise.resolve(window.ExcelJS);
+    if(xlLib) return xlLib;
+    xlLib=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'; s.onload=()=>res(window.ExcelJS); s.onerror=()=>{xlLib=null;rej(new Error('lib'));}; document.head.appendChild(s); });
+    return xlLib;
+  }
+  async function buildExcel(mes){
+    const ExcelJS=await loadExcelJS();
+    const {P,ns,C,prev,PP,gs,gCop,gUsd,parts,partsUsd}=monthInfo(mes);
+    const wb=new ExcelJS.Workbook(); wb.creator='Cuentas del Trading'; wb.created=new Date();
+    const ws=wb.addWorksheet(mShort(mes),{views:[{showGridLines:false}],pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0}});
+    const NAVY='FF18203A', ACC='FF3346B8', SOFT='FFE8EBF3', LINE='FFDDE1EB', POS='FF197A4B', NEG='FFB73A32', MUT='FF5D6682', WHITE='FFFFFFFF';
+    const F_COP='"$"#,##0', F_USD='"US$"#,##0.00', F_PCT='0.00%', F_TRM='#,##0.00';
+    const border={top:{style:'thin',color:{argb:LINE}},bottom:{style:'thin',color:{argb:LINE}},left:{style:'thin',color:{argb:LINE}},right:{style:'thin',color:{argb:LINE}}};
+    ws.columns=[{width:26},{width:20},{width:16},{width:22},{width:20},{width:18},{width:18}];
+    const NC=7;
+    const band=(r,text,size,fill,color)=>{ ws.mergeCells(r,1,r,NC); const c=ws.getCell(r,1); c.value=text; c.font={name:'Calibri',size,bold:true,color:{argb:color}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:fill}}; c.alignment={vertical:'middle',horizontal:'left',indent:1}; ws.getRow(r).height=size>14?34:22; };
+    const section=(r,text)=>{ ws.mergeCells(r,1,r,NC); const c=ws.getCell(r,1); c.value=text; c.font={bold:true,size:12,color:{argb:NAVY}}; c.border={bottom:{style:'medium',color:{argb:ACC}}}; ws.getRow(r).height=22; };
+    const header=(r,labels)=>{ labels.forEach((t,k)=>{ const c=ws.getCell(r,k+1); c.value=t; c.font={bold:true,color:{argb:WHITE}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:NAVY}}; c.alignment={vertical:'middle',horizontal:k===0?'left':'center',wrapText:true}; c.border=border; }); ws.getRow(r).height=22; };
+    const cellf=(r,k,v,fmt,opt={})=>{ const c=ws.getCell(r,k); c.value=v; if(fmt) c.numFmt=fmt; c.border=border; c.alignment={vertical:'middle',horizontal:opt.left?'left':'right',indent:opt.left?1:0,wrapText:!!opt.wrap}; c.font={bold:!!opt.bold,color:{argb:opt.color||NAVY},size:opt.size||11}; if(opt.fill) c.fill={type:'pattern',pattern:'solid',fgColor:{argb:opt.fill}}; return c; };
+    let r=1;
+    band(r++,'CUENTAS DEL TRADING',18,NAVY,WHITE);
+    band(r++,'Resumen de '+mLong(mes)+(mes===lastMes()?'  ·  mes en curso':'  ·  mes cerrado'),12,ACC,WHITE);
+    ws.mergeCells(r,1,r,NC); ws.getCell(r,1).value='Generado el '+fdate(today())+'. La ganancia de cada socio se reparte según su porcentaje de capital en el mes.'; ws.getCell(r,1).font={italic:true,size:10,color:{argb:MUT}}; ws.getCell(r,1).alignment={indent:1}; r+=2;
+
+    section(r++,'Resumen del mes');
+    const sumRows=[['Capital invertido',C,F_COP],['Ganancia del mes (COP)',gCop,F_COP],['Ganancia del mes (USD)',gUsd,F_USD],['Rendimiento del mes',C>0?gCop/C:0,F_PCT],['Reportes de ganancia',gs.length,'0']];
+    if(prev) sumRows.splice(1,0,['Cambio vs '+mLong(prev),C-sumOf(PP),'"+$"#,##0;"−$"#,##0;"$"0']);
+    sumRows.forEach(([l,v,f],k)=>{ ws.mergeCells(r,1,r,2); cellf(r,1,l,null,{left:true,bold:true,fill:k%2?WHITE:SOFT}); ws.getCell(r,2).border=border; cellf(r,3,v,f,{bold:true,fill:k%2?WHITE:SOFT,color:(l.startsWith('Ganancia')||l.startsWith('Rend'))?POS:NAVY}); r++; });
+    r++;
+
+    section(r++,'Socios');
+    header(r++,['Socio','Capital invertido','Porcentaje',prev?'Cambio vs '+MES3[+prev.slice(5)-1]:'Cambio','Ganancia (COP)','Ganancia (USD)','Estado']);
+    const first=r, left=Object.keys(PP).filter(n=>PP[n]>0&&!(P[n]>0)), rowsN=[...ns,...left];
+    rowsN.forEach((n,k)=>{
+      const fill=k%2?WHITE:SOFT, before=PP[n]||0, cap=P[n]>0?P[n]:0;
+      cellf(r,1,n.toUpperCase(),null,{left:true,bold:true,fill});
+      cellf(r,2,cap,F_COP,{fill});
+      cellf(r,3,{formula:'B'+r+'/$B$'+(first+rowsN.length),result:C>0?cap/C:0},F_PCT,{fill});
+      cellf(r,4,prev?cap-before:0,'"+$"#,##0;"−$"#,##0;"—"',{fill,color:cap>before?POS:cap<before?NEG:MUT});
+      cellf(r,5,parts[n]||0,F_COP,{fill,color:POS,bold:true});
+      cellf(r,6,partsUsd[n]||0,F_USD,{fill,color:POS});
+      cellf(r,7,!prev?'Inicio':before===0?'Nuevo':cap===0?'Salió':cap===before?'Igual':cap>before?'Aumentó':'Redujo',null,{fill,left:true,color:MUT});
+      r++;
+    });
+    const last=r-1;
+    cellf(r,1,'TOTAL',null,{left:true,bold:true,fill:SOFT});
+    cellf(r,2,{formula:`SUM(B${first}:B${last})`,result:C},F_COP,{bold:true,fill:SOFT});
+    cellf(r,3,{formula:`SUM(C${first}:C${last})`,result:C>0?1:0},F_PCT,{bold:true,fill:SOFT});
+    cellf(r,4,{formula:`SUM(D${first}:D${last})`,result:prev?C-sumOf(PP):0},'"+$"#,##0;"−$"#,##0;"—"',{bold:true,fill:SOFT});
+    cellf(r,5,{formula:`SUM(E${first}:E${last})`,result:gCop},F_COP,{bold:true,fill:SOFT,color:POS});
+    cellf(r,6,{formula:`SUM(F${first}:F${last})`,result:gUsd},F_USD,{bold:true,fill:SOFT,color:POS});
+    cellf(r,7,'',null,{fill:SOFT});
+    ws.getRow(r).border={top:{style:'medium',color:{argb:NAVY}}};
+    r+=2;
+
+    section(r++,'Ganancias reportadas');
+    if(gs.length){
+      const cols=['#','Fecha','Ganancia (USD)','TRM','Ganancia (COP)'];
+      header(r++,[...cols.slice(0,5),'Reparto por socio','']); ws.mergeCells(r-1,6,r-1,7);
+      gs.forEach((g,k)=>{
+        const fill=k%2?WHITE:SOFT;
+        cellf(r,1,'Reporte '+(k+1),null,{left:true,bold:true,fill});
+        cellf(r,2,g.fecha?fdate(g.fecha):'',null,{fill});
+        cellf(r,3,g.usd||0,F_USD,{fill});
+        cellf(r,4,g.trm||0,F_TRM,{fill});
+        cellf(r,5,g.monto,F_COP,{fill,color:POS,bold:true});
+        ws.mergeCells(r,6,r,7);
+        cellf(r,6,ns.map(n=>n+': $'+nf.format(Math.round(g.monto*P[n]/C))).join('\n'),null,{left:true,fill,wrap:true,size:10,color:MUT});
+        ws.getRow(r).height=Math.max(20,15*ns.length);
+        r++;
+      });
+      cellf(r,1,'TOTAL',null,{left:true,bold:true,fill:SOFT}); cellf(r,2,'',null,{fill:SOFT});
+      cellf(r,3,gUsd,F_USD,{bold:true,fill:SOFT}); cellf(r,4,'',null,{fill:SOFT});
+      cellf(r,5,gCop,F_COP,{bold:true,fill:SOFT,color:POS}); ws.mergeCells(r,6,r,7); cellf(r,6,'',null,{fill:SOFT});
+      r++;
+    } else { ws.mergeCells(r,1,r,NC); cellf(r,1,'Aún no hay reportes de ganancia este mes.',null,{left:true,color:MUT}); r++; }
+    r++;
+
+    section(r++,'Movimientos de capital');
+    const hist=capHistory(mes);
+    if(hist.length){
+      header(r++,['Socio','Concepto','','Capital anterior','Capital nuevo','Diferencia','Tipo']);
+      ws.mergeCells(r-1,2,r-1,3);
+      hist.forEach(({m,a,b,why},k)=>{
+        const fill=k%2?WHITE:SOFT;
+        cellf(r,1,m.persona.toUpperCase(),null,{left:true,bold:true,fill});
+        ws.mergeCells(r,2,r,3); cellf(r,2,why,null,{left:true,fill,wrap:true});
+        cellf(r,4,a,F_COP,{fill}); cellf(r,5,b,F_COP,{fill,bold:true});
+        cellf(r,6,b-a,'"+$"#,##0;"−$"#,##0',{fill,color:b>a?POS:NEG});
+        cellf(r,7,m.tipo==='aporte'?'Aporte':'Retiro',null,{fill,left:true,color:m.tipo==='aporte'?ACC:NEG});
+        r++;
+      });
+    } else { ws.mergeCells(r,1,r,NC); cellf(r,1,prev?'Sin cambios: todos siguen con el mismo capital de '+mLong(prev)+'.':'Sin movimientos.',null,{left:true,color:MUT}); r++; }
+    r++;
+    ws.mergeCells(r,1,r,NC); const ft=ws.getCell(r,1); ft.value='Valores en pesos colombianos (COP). Las ganancias en USD se convierten con la TRM de cada reporte.'; ft.font={italic:true,size:9,color:{argb:MUT}}; ft.alignment={indent:1};
+    return await wb.xlsx.writeBuffer();
+  }
+  $('dlBtn').onclick=async()=>{
+    const mes=tab; if(!mes||mes==='total') return;
+    const b=$('dlBtn'), txt=b.textContent; b.disabled=true; b.textContent='Generando…';
+    try{
+      if(!isAdmin()){ try{ data=norm(await loadPublic()); }catch(e){} }
+      const buf=await buildExcel(mes);
+      const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='Resumen-Trading-'+mes+'-'+MESES[+mes.slice(5)-1]+'.xlsx';
+      document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500);
+      b.textContent='Descargado';
+    }catch(e){ b.textContent='No se pudo generar. Intenta de nuevo.'; }
+    setTimeout(()=>{ b.disabled=false; render(); },1800);
+  };
 
   /* ---------- entrar / salir ---------- */
   $('adminLink').onclick=()=>{ $('login').hidden=false; $('lRepo').value=LS.get('gh_repo')||guessRepo()||''; ($('lRepo').value?$('lToken'):$('lRepo')).focus(); };
@@ -583,5 +745,6 @@ footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
   });
 })();
 </script>
+
 </body>
 </html>
