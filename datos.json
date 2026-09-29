@@ -56,6 +56,16 @@
       "monto": 3068500,
       "creado": 1790646533561,
       "mes": "2026-09"
+    },
+    {
+      "id": "mum2cajlxex0i",
+      "tipo": "ganancia",
+      "mes": "2026-10",
+      "fecha": "2026-09-01",
+      "usd": 100,
+      "trm": 3400,
+      "monto": 340000,
+      "creado": 1790649268833
     }
   ],
   "meses": [
