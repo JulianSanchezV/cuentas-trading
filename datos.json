@@ -92,41 +92,10 @@
       "fecha": "2026-09-28",
       "trm": 2000,
       "creado": 1790650268764
-    },
-    {
-      "id": "mum319zxvnlkw",
-      "tipo": "aporte",
-      "persona": "Julian",
-      "mes": "2026-11",
-      "fecha": "2026-09-28",
-      "monto": 32000000,
-      "nota": "Aumenta su capital en Noviembre 2026",
-      "creado": 1790650434526
-    },
-    {
-      "id": "mum319zx263li",
-      "tipo": "aporte",
-      "persona": "Oscar",
-      "mes": "2026-11",
-      "fecha": "2026-09-28",
-      "monto": 15000000,
-      "nota": "Aumenta su capital en Noviembre 2026",
-      "creado": 1790650434527
-    },
-    {
-      "id": "mum31sq8dafro",
-      "tipo": "ganancia",
-      "mes": "2026-11",
-      "fecha": "2026-11-17",
-      "usd": 5000,
-      "trm": 3500,
-      "monto": 17500000,
-      "creado": 1790650458800
     }
   ],
   "meses": [
     "2026-09",
-    "2026-10",
-    "2026-11"
+    "2026-10"
   ]
 }
