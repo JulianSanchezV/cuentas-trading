@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cuentas del Trading</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f1f3f7; --surface:#ffffff; --ink:#18203a; --muted:#5d6682; --line:#dde1eb; --soft:#e8ebf3;
+  --accent:#3346b8; --accent-ink:#ffffff; --pos:#197a4b; --neg:#b73a32; --admin:#7a4f0e; --admin-bg:#fbf3e3;
+  --c1:#3346b8; --c2:#c07a12; --c3:#1f8a86; --c4:#8a4aa8; --c5:#b8465f; --c6:#4f7a1e;
+  --f-display:"Sora","Segoe UI",system-ui,sans-serif;
+  --f-body:"Figtree","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){ :root{
+  --bg:#10131f; --surface:#181c2c; --ink:#e4e8f5; --muted:#99a1bd; --line:#2a3048; --soft:#212741;
+  --accent:#8b9cff; --accent-ink:#10131f; --pos:#5fd39a; --neg:#f28a80; --admin:#e8b04e; --admin-bg:#2a2414;
+  --c1:#8b9cff; --c2:#e8b04e; --c3:#5cc9c3; --c4:#c796e2; --c5:#ec8aa0; --c6:#a3d468; color-scheme:dark } }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+[hidden]{display:none!important}
+.wrap{max-width:800px;margin:0 auto;padding-inline:16px;padding-block:24px 56px;display:grid;gap:22px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1{font-size:1.5rem} h2{font-size:1.05rem} h3{font-size:.95rem}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.pos{color:var(--pos)} .neg{color:var(--neg)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section{display:grid;gap:10px}
+.head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between}
+.status{font-size:.85rem;color:var(--muted)}
+.badge{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--admin);background:var(--admin-bg);border:1px solid var(--admin);padding:3px 9px;border-radius:999px}
+
+.totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.totals > div{padding:14px 16px;display:grid;gap:2px;min-width:0}
+.totals > div + div{border-left:1px solid var(--line)}
+.totals .big{font-size:1.25rem;font-weight:500;overflow-wrap:anywhere}
+@media (max-width:520px){.totals{grid-template-columns:1fr 1fr}.totals > div:nth-child(3){grid-column:1/-1;border-left:0;border-top:1px solid var(--line)}}
+
+.people{display:grid;gap:10px}
+.person{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:grid;grid-template-columns:minmax(0,1.2fr) repeat(3,minmax(0,1fr));gap:8px 14px;align-items:center}
+.person .name{display:flex;align-items:center;gap:8px;font-weight:600;font-size:1.02rem;min-width:0;overflow-wrap:anywhere}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.person .cell{display:grid;gap:1px;text-align:right;min-width:0}
+.person .cell .v{font-size:.98rem;overflow-wrap:anywhere}
+.bar{grid-column:1/-1;height:5px;background:var(--soft);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%}
+.acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding-top:4px;border-top:1px dashed var(--line)}
+.sbtn{border:1px solid var(--line);background:transparent;border-radius:7px;padding:5px 10px;font-size:.84rem;font-weight:600;cursor:pointer}
+.sbtn.add{color:var(--pos)} .sbtn.out{color:var(--accent)} .sbtn.rm{color:var(--muted);margin-left:auto}
+.sbtn.rm:hover{color:var(--neg);border-color:var(--neg)}
+.inline{grid-column:1/-1;background:var(--soft);border-radius:9px;padding:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;align-items:end}
+.inline p{grid-column:1/-1;margin:0;font-size:.88rem}
+@media (max-width:520px){.person{grid-template-columns:repeat(3,minmax(0,1fr))}.person .name{grid-column:1/-1}.person .cell{text-align:left}}
+
+.admin{background:var(--admin-bg);border:1px solid var(--admin);border-radius:14px;padding:16px;display:grid;gap:16px}
+.admin .block{display:grid;gap:8px}
+.admin .block + .block{border-top:1px solid var(--line);padding-top:14px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end}
+.field{display:grid;gap:4px;min-width:0}
+.field label{font-size:.8rem;font-weight:600;color:var(--muted)}
+input[type=text],input[type=date],input[type=password],select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+.btn{border:0;background:var(--accent);color:var(--accent-ink);padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:var(--neg);color:var(--accent-ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.preview{background:var(--surface);border-radius:8px;padding:10px 12px;font-size:.88rem;display:flex;flex-wrap:wrap;gap:6px 22px}
+.preview:empty{display:none}
+.msg{font-size:.85rem;min-height:1.2em;margin:0}
+
+.hist{display:grid;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.item{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:4px 12px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.pill{font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--soft);white-space:nowrap}
+.pill.g{color:var(--pos)} .pill.a{color:var(--accent)} .pill.r{color:var(--neg)}
+.item .what{min-width:0}
+.item .what small{display:block;color:var(--muted);font-size:.8rem;overflow-wrap:anywhere}
+.item .amt{text-align:right;white-space:nowrap}
+.del{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:4px 6px;border-radius:6px;font-size:.8rem}
+.del:hover{color:var(--neg)}
+.del.sure{color:var(--neg);font-weight:700}
+.empty{padding:22px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:12px}
+.hist .empty{border:0;border-radius:0}
+.filter{width:auto;max-width:220px}
+
+footer{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.link{border:0;background:transparent;color:var(--muted);font-size:.82rem;cursor:pointer;text-decoration:underline;padding:4px}
+.login{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:10px}
+.login p{margin:0;font-size:.86rem;color:var(--muted);max-width:65ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <div style="display:grid;gap:4px">
+      <h1>Cuentas del Trading</h1>
+      <span class="status" id="status">Cargando…</span>
+    </div>
+    <span class="badge" id="badge" hidden>Modo administrador</span>
+  </header>
+
+  <!-- Panel de administración: solo visible con la clave de GitHub -->
+  <section class="admin" id="admin" hidden aria-label="Panel de administración">
+    <div class="block">
+      <h3>Agregar persona</h3>
+      <div class="row">
+        <div class="field"><label for="pNombre">Nombre</label><input id="pNombre" type="text"></div>
+        <div class="field"><label for="pMonto">Inversión inicial (COP)</label><input id="pMonto" type="text" class="num money" inputmode="numeric" placeholder="5.000.000"></div>
+        <div class="field"><label for="pFecha">Fecha</label><input id="pFecha" type="date"></div>
+        <button class="btn" id="pSave" type="button">Agregar</button>
+      </div>
+      <p class="msg" id="pMsg"></p>
+    </div>
+    <div class="block">
+      <h3>Ganancia del mes</h3>
+      <div class="row">
+        <div class="field"><label for="gFecha">Fecha</label><input id="gFecha" type="date"></div>
+        <div class="field"><label for="gUsd">Ganancia (USD)</label><input id="gUsd" type="text" class="num" inputmode="decimal" placeholder="350,50"></div>
+        <div class="field"><label for="gTrm">TRM del día</label><input id="gTrm" type="text" class="num" inputmode="decimal" placeholder="4.050,25"></div>
+        <button class="btn" id="gSave" type="button">Agregar</button>
+      </div>
+      <div class="preview" id="gPrev"></div>
+      <p class="msg" id="gMsg"></p>
+    </div>
+  </section>
+
+  <div class="totals" aria-label="Totales">
+    <div><span class="lbl">Capital invertido</span><span class="big num" id="tCap">$0</span></div>
+    <div><span class="lbl">Ganancia acumulada</span><span class="big num pos" id="tGan">$0</span></div>
+    <div><span class="lbl">Último mes</span><span class="big num" id="tUlt">—</span></div>
+  </div>
+
+  <section aria-label="Socios">
+    <h2>Socios</h2>
+    <div class="people" id="people"></div>
+  </section>
+
+  <section aria-label="Historial">
+    <div class="head">
+      <h2>Historial</h2>
+      <select id="filtro" class="filter" aria-label="Filtrar por persona"><option value="">Todos</option></select>
+    </div>
+    <div class="hist" id="hist"></div>
+  </section>
+
+  <section class="login" id="login" hidden aria-label="Entrar como administrador">
+    <h3>Entrar como administrador</h3>
+    <p>Pega tu clave de GitHub (token con permiso de escritura sobre este repositorio). Se guarda solo en este navegador.</p>
+    <div class="row">
+      <div class="field"><label for="lRepo">Repositorio (usuario/nombre)</label><input id="lRepo" type="text" placeholder="usuario/trading"></div>
+      <div class="field"><label for="lToken">Clave de GitHub</label><input id="lToken" type="password" autocomplete="off"></div>
+      <button class="btn" id="lGo" type="button">Entrar</button>
+    </div>
+    <p class="msg" id="lMsg"></p>
+  </section>
+
+  <footer>
+    <button class="link" id="adminLink" type="button">Administrar</button>
+    <button class="link" id="logout" type="button" hidden>Salir del modo administrador</button>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const FILE='datos.json';
+  const COLORS=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
+  const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+
+  let data={personas:[],movs:[]}, sha=null, token=null, repo=null, busy=false, open=null;
+  const isAdmin=()=>!!token;
+
+  /* ---------- formato ---------- */
+  const nf=new Intl.NumberFormat('es-CO',{maximumFractionDigits:0});
+  const nf1=new Intl.NumberFormat('es-CO',{minimumFractionDigits:1,maximumFractionDigits:1});
+  const nf2=new Intl.NumberFormat('es-CO',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const cop=n=>(n<0?'−':'')+'$'+nf.format(Math.abs(Math.round(n)));
+  const usd=n=>'US$'+nf2.format(n);
+  const pct=n=>nf1.format(n*100)+'%';
+  const parseInt0=s=>{const d=String(s||'').replace(/[^\d]/g,'');return d?parseInt(d,10):NaN;};
+  function parseDec(s){
+    s=String(s||'').replace(/[^\d.,]/g,''); if(!s) return NaN;
+    const lc=s.lastIndexOf(','), ld=s.lastIndexOf('.');
+    if(lc>-1&&ld>-1) s= lc>ld ? s.replace(/\./g,'').replace(',','.') : s.replace(/,/g,'');
+    else if(lc>-1){ const p=s.split(','); s=(p.length>2||p[1].length===3)?s.replace(/,/g,''):s.replace(',','.'); }
+    else if(ld>-1){ const p=s.split('.'); if(p.length>2||p[1].length===3) s=s.replace(/\./g,''); }
+    return parseFloat(s);
+  }
+  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fdate=s=>{if(!s)return '';const[y,m,d]=s.split('-');return d+'/'+m+'/'+y;};
+  const today=()=>{const d=new Date(),z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());};
+  const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+  /* ---------- repositorio ---------- */
+  function guessRepo(){
+    const h=location.hostname, m=h.match(/^([^.]+)\.github\.io$/i);
+    if(!m) return null;
+    const seg=location.pathname.split('/').filter(Boolean)[0];
+    return m[1]+'/'+(seg&&!seg.includes('.')?seg:h);
+  }
+  const b64dec=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,'')),c=>c.charCodeAt(0)));
+  const b64enc=s=>{const b=new TextEncoder().encode(s);let r='';for(let i=0;i<b.length;i+=0x8000)r+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(r);};
+  const api=p=>'https://api.github.com/repos/'+repo+'/contents/'+p;
+
+  async function loadPublic(){
+    // Primero la API (siempre al día); si falla, el archivo publicado.
+    const r0=repo||guessRepo();
+    if(r0){
+      try{
+        const r=await fetch('https://api.github.com/repos/'+r0+'/contents/'+FILE,{headers:{Accept:'application/vnd.github.raw+json'},cache:'no-store'});
+        if(r.ok) return await r.json();
+      }catch(e){}
+    }
+    const r=await fetch(FILE+'?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok) throw new Error('no-file');
+    return await r.json();
+  }
+  async function loadAdmin(){
+    const r=await fetch(api(FILE)+'?t='+Date.now(),{headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json'},cache:'no-store'});
+    if(r.status===401||r.status===403) throw new Error('auth');
+    if(r.status===404) throw new Error('404');
+    if(!r.ok) throw new Error('http');
+    const j=await r.json(); sha=j.sha;
+    return JSON.parse(b64dec(j.content));
+  }
+  function norm(d){ return {personas:Array.isArray(d&&d.personas)?d.personas:[],movs:Array.isArray(d&&d.movs)?d.movs:[]}; }
+
+  async function save(mutate,okText,msgEl){
+    if(busy) return false;
+    busy=true; setStatus('Guardando…');
+    const next=JSON.parse(JSON.stringify(data)); mutate(next);
+    try{
+      const body={message:okText||'Actualizar datos',content:b64enc(JSON.stringify(next,null,2)+'\n'),sha};
+      const r=await fetch(api(FILE),{method:'PUT',headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(r.status===409||r.status===422){
+        data=norm(await loadAdmin()); render();
+        flash(msgEl,'Los datos cambiaron en GitHub. Se recargaron; repite la acción.',true); setStatus(''); return false;
+      }
+      if(r.status===401||r.status===403){ flash(msgEl,'La clave no tiene permiso de escritura. Revisa el token.',true); setStatus(''); return false; }
+      if(!r.ok) throw new Error('http');
+      const j=await r.json(); sha=j.content.sha; data=next;
+      flash(msgEl,(okText||'Guardado')+'. Guardado en GitHub.'); setStatus('Guardado. Los demás lo ven al recargar.');
+      render(); return true;
+    }catch(e){ flash(msgEl,'No se pudo guardar. Revisa tu conexión e intenta de nuevo.',true); setStatus(''); return false; }
+    finally{ busy=false; }
+  }
+
+  /* ---------- cálculo: cada ganancia se reparte según el capital de cada uno en esa fecha ---------- */
+  function compute(list){
+    const s=[...list].sort((a,b)=>a.fecha<b.fecha?-1:a.fecha>b.fecha?1:(a.creado||0)-(b.creado||0));
+    const P={}; const per=n=>P[n]||(P[n]={cap:0,gan:0,apo:0,ret:0});
+    const rows=[]; let totalGan=0,last=null;
+    for(const m of s){
+      if(m.tipo==='ganancia'){
+        const ns=Object.keys(P).filter(n=>P[n].cap>0), C=ns.reduce((a,n)=>a+P[n].cap,0), parts={};
+        if(C>0) for(const n of ns){ const g=m.monto*P[n].cap/C; parts[n]=g; P[n].gan+=g; }
+        totalGan+=m.monto; const r={...m,capital:C,rend:C>0?m.monto/C:NaN,parts}; rows.push(r); last=r;
+      } else {
+        const p=per(m.persona);
+        if(m.tipo==='aporte'){p.cap+=m.monto;p.apo+=m.monto;} else {p.cap-=m.monto;p.ret+=m.monto;}
+        rows.push({...m});
+      }
+    }
+    return {P,rows,totalGan,last};
+  }
+  const activos=()=>data.personas.filter(p=>p.activo!==false).sort((a,b)=>(a.creado||0)-(b.creado||0));
+  const colorOf=n=>{const i=[...data.personas].sort((a,b)=>(a.creado||0)-(b.creado||0)).findIndex(p=>p.nombre===n);return COLORS[(i<0?0:i)%COLORS.length];};
+
+  /* ---------- pintar ---------- */
+  function setStatus(t){ $('status').textContent=t||(isAdmin()?'Estás editando. Cada cambio se guarda en GitHub.':'Resumen del fondo. Cada ganancia se reparte según el porcentaje invertido.'); }
+  function flash(el,t,bad){ if(!el) return; el.textContent=t; el.className='msg '+(bad?'neg':'pos'); }
+
+  function render(){
+    const adm=isAdmin();
+    $('admin').hidden=!adm; $('badge').hidden=!adm; $('logout').hidden=!adm; $('adminLink').hidden=adm; if(adm) $('login').hidden=true;
+    const {P,rows,totalGan,last}=compute(data.movs), act=activos();
+    const cap=act.reduce((a,p)=>a+Math.max(0,(P[p.nombre]?.cap)||0),0);
+    $('tCap').textContent=cop(cap); $('tGan').textContent=cop(totalGan);
+    $('tUlt').innerHTML=last?cop(last.monto)+(isFinite(last.rend)?' <span class="muted" style="font-size:.8rem">'+pct(last.rend)+'</span>':''):'—';
+
+    $('people').innerHTML=act.length?act.map(p=>{
+      const d=P[p.nombre]||{cap:0,gan:0,apo:0,ret:0}, sh=cap>0?Math.max(0,d.cap)/cap:0, col=colorOf(p.nombre);
+      let extra='';
+      if(adm){
+        extra=`<div class="acts">
+          <button class="sbtn add" type="button" data-do="aporte" data-id="${esc(p.id)}">+ Agregar dinero</button>
+          <button class="sbtn out" type="button" data-do="retiro" data-id="${esc(p.id)}">− Retirar dinero</button>
+          <button class="sbtn rm" type="button" data-do="quitar-ask" data-id="${esc(p.id)}">Quitar persona</button></div>`;
+        if(open&&open.id===p.id){
+          if(open.mode==='quitar'){
+            extra+=`<div class="inline"><p>${d.cap>0?`Se registra un retiro de <b class="num">${cop(d.cap)}</b> y ${esc(p.nombre)} sale del fondo.`:`${esc(p.nombre)} sale del fondo.`} Su historial se conserva.</p>
+              <div class="field"><label for="qFecha">Fecha de salida</label><input id="qFecha" type="date" value="${today()}"></div>
+              <button class="btn danger" type="button" data-do="quitar" data-id="${esc(p.id)}">Quitar persona</button>
+              <button class="btn ghost" type="button" data-do="cancel">Cancelar</button><p class="msg" id="iMsg"></p></div>`;
+          } else {
+            const ap=open.mode==='aporte';
+            extra+=`<div class="inline">
+              <div class="field"><label for="iMonto">${ap?'Monto a agregar':'Monto a retirar'} (COP)</label><input id="iMonto" type="text" class="num money" inputmode="numeric"></div>
+              <div class="field"><label for="iFecha">Fecha</label><input id="iFecha" type="date" value="${today()}"></div>
+              <button class="btn" type="button" data-do="guardar" data-id="${esc(p.id)}">${ap?'Agregar':'Retirar'}</button>
+              <button class="btn ghost" type="button" data-do="cancel">Cancelar</button><p class="msg" id="iMsg"></p></div>`;
+          }
+        }
+      }
+      return `<div class="person">
+        <div class="name"><span class="dot" style="background:${col}"></span>${esc(p.nombre)}</div>
+        <div class="cell"><span class="lbl">Invertido</span><span class="v num">${cop(d.cap)}</span></div>
+        <div class="cell"><span class="lbl">Porcentaje</span><span class="v num">${pct(sh)}</span></div>
+        <div class="cell"><span class="lbl">Ganancia</span><span class="v num pos">${cop(d.gan)}</span></div>
+        <div class="bar"><i style="width:${(sh*100).toFixed(2)}%;background:${col}"></i></div>${extra}</div>`;
+    }).join(''):`<div class="empty">${adm?'Agrega el primer socio desde el panel de arriba.':'Todavía no hay socios registrados.'}</div>`;
+
+    // filtro
+    const f=$('filtro'), cur=f.value, all=[...new Set(data.personas.map(p=>p.nombre))];
+    f.innerHTML='<option value="">Todos</option>'+all.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    f.value=all.includes(cur)?cur:'';
+
+    const who=f.value;
+    const h=[...rows].reverse().filter(r=>!who||(r.tipo==='ganancia'?(who in r.parts):r.persona===who));
+    $('hist').innerHTML=h.length?h.map(r=>{
+      const del=adm?`<button class="del" type="button" data-del="${esc(r.id)}">Borrar</button>`:'<span></span>';
+      if(r.tipo==='ganancia'){
+        const conv=r.usd?`${usd(r.usd)} × TRM ${nf2.format(r.trm)}`:'';
+        const det=who?`Le tocó a ${esc(who)}: ${cop(r.parts[who])}`:Object.keys(r.parts).map(n=>esc(n)+' '+cop(r.parts[n])).join(' · ');
+        return `<div class="item"><span class="pill g">Ganancia</span>
+          <div class="what">${fdate(r.fecha)}${isFinite(r.rend)?' · <span class="num">'+pct(r.rend)+'</span>':''}<small class="num">${conv}${conv&&det?'<br>':''}${det||'Sin capital registrado'}</small></div>
+          <span class="amt num pos">${cop(r.monto)}</span>${del}</div>`;
+      }
+      const ap=r.tipo==='aporte';
+      return `<div class="item"><span class="pill ${ap?'a':'r'}">${ap?'Aporte':'Retiro'}</span>
+        <div class="what">${esc(r.persona)}<small>${fdate(r.fecha)}</small></div>
+        <span class="amt num ${ap?'':'neg'}">${ap?'+':'−'}${cop(r.monto)}</span>${del}</div>`;
+    }).join(''):'<div class="empty">Aún no hay registros.</div>';
+
+    gPreview();
+    if(open&&open.mode!=='quitar'){ const i=$('iMonto'); if(i) i.focus(); }
+  }
+  $('filtro').addEventListener('change',render);
+
+  /* ---------- acciones del administrador ---------- */
+  $('people').addEventListener('click',async e=>{
+    const b=e.target.closest('[data-do]'); if(!b||!isAdmin()) return;
+    const a=b.dataset.do, p=data.personas.find(x=>x.id===b.dataset.id);
+    if(a==='cancel'){ open=null; render(); return; }
+    if(a==='aporte'||a==='retiro'){ open={id:p.id,mode:a}; render(); return; }
+    if(a==='quitar-ask'){ open={id:p.id,mode:'quitar'}; render(); return; }
+    const m=$('iMsg');
+    if(a==='guardar'){
+      const v=parseInt0($('iMonto').value), f=$('iFecha').value, mode=open.mode;
+      if(!(v>0)) return flash(m,'Escribe el monto en pesos.',true);
+      if(!f) return flash(m,'Elige la fecha.',true);
+      const cap=(compute(data.movs).P[p.nombre]?.cap)||0;
+      if(mode==='retiro'&&v>cap) return flash(m,'No puede retirar más de '+cop(cap)+'.',true);
+      b.disabled=true;
+      const ok=await save(d=>d.movs.push({id:uid(),tipo:mode,persona:p.nombre,fecha:f,monto:v,creado:Date.now()}),(mode==='aporte'?'Aporte de ':'Retiro de ')+p.nombre+' '+cop(v),m);
+      if(ok){ open=null; render(); } else b.disabled=false;
+      return;
+    }
+    if(a==='quitar'){
+      const f=$('qFecha').value||today(), cap=(compute(data.movs).P[p.nombre]?.cap)||0;
+      b.disabled=true;
+      const ok=await save(d=>{
+        if(cap>0) d.movs.push({id:uid(),tipo:'retiro',persona:p.nombre,fecha:f,monto:Math.round(cap),creado:Date.now()});
+        const x=d.personas.find(y=>y.id===p.id); if(x) x.activo=false;
+      },'Sale '+p.nombre,m);
+      if(ok){ open=null; render(); } else b.disabled=false;
+    }
+  });
+
+  $('pSave').onclick=async()=>{
+    const m=$('pMsg'), n=$('pNombre').value.trim(), v=parseInt0($('pMonto').value), f=$('pFecha').value;
+    if(!n) return flash(m,'Escribe el nombre.',true);
+    if(activos().some(p=>p.nombre.toLowerCase()===n.toLowerCase())) return flash(m,n+' ya está en la lista.',true);
+    if(!f) return flash(m,'Elige la fecha.',true);
+    $('pSave').disabled=true;
+    const ok=await save(d=>{
+      const prev=d.personas.find(p=>p.nombre.toLowerCase()===n.toLowerCase());
+      const name=prev?prev.nombre:n;
+      if(prev) prev.activo=true; else d.personas.push({id:uid(),nombre:n,activo:true,creado:Date.now()});
+      if(v>0) d.movs.push({id:uid(),tipo:'aporte',persona:name,fecha:f,monto:v,creado:Date.now()});
+    },'Nueva persona: '+n+(v>0?' con '+cop(v):''),m);
+    $('pSave').disabled=false;
+    if(ok){ $('pNombre').value=''; $('pMonto').value=''; }
+  };
+
+  function gPreview(){
+    const pv=$('gPrev'), u=parseDec($('gUsd').value), t=parseDec($('gTrm').value);
+    if(!(u>0)||!(t>0)){ pv.innerHTML=''; return; }
+    const v=Math.round(u*t), f=$('gFecha').value||today();
+    const {P}=compute(data.movs.filter(m=>m.fecha<=f));
+    const ns=Object.keys(P).filter(n=>P[n].cap>0), C=ns.reduce((a,n)=>a+P[n].cap,0);
+    pv.innerHTML=`<span>Total <b class="num pos">${cop(v)}</b></span>`+(C>0?ns.map(n=>`<span>${esc(n)} <b class="num">${cop(v*P[n].cap/C)}</b></span>`).join('')+`<span class="muted">Rendimiento <b class="num">${pct(v/C)}</b></span>`:'<span class="muted">No hay capital registrado antes de esta fecha.</span>');
+  }
+  ['gUsd','gTrm','gFecha'].forEach(id=>$(id).addEventListener('input',gPreview));
+  $('gSave').onclick=async()=>{
+    const m=$('gMsg'), u=parseDec($('gUsd').value), t=parseDec($('gTrm').value), f=$('gFecha').value;
+    if(!f) return flash(m,'Elige la fecha.',true);
+    if(!(u>0)) return flash(m,'Escribe la ganancia en dólares.',true);
+    if(!(t>0)) return flash(m,'Escribe la TRM del día.',true);
+    const v=Math.round(u*t);
+    $('gSave').disabled=true;
+    const ok=await save(d=>d.movs.push({id:uid(),tipo:'ganancia',fecha:f,usd:u,trm:t,monto:v,creado:Date.now()}),'Ganancia '+fdate(f)+' '+cop(v),m);
+    $('gSave').disabled=false;
+    if(ok){ $('gUsd').value=''; gPreview(); }
+  };
+
+  $('hist').addEventListener('click',async e=>{
+    const b=e.target.closest('[data-del]'); if(!b||!isAdmin()) return;
+    if(!b.classList.contains('sure')){ b.classList.add('sure'); b.textContent='¿Seguro?'; setTimeout(()=>{ if(b.isConnected){b.classList.remove('sure');b.textContent='Borrar';} },3000); return; }
+    b.disabled=true;
+    const id=b.dataset.del;
+    await save(d=>{d.movs=d.movs.filter(x=>x.id!==id);},'Registro borrado',null);
+  });
+
+  document.addEventListener('focusout',e=>{ const el=e.target; if(el.classList&&el.classList.contains('money')){ const v=parseInt0(el.value); if(v>0) el.value=nf.format(v); } });
+
+  /* ---------- entrar / salir ---------- */
+  $('adminLink').onclick=()=>{ $('login').hidden=false; $('lRepo').value=LS.get('gh_repo')||guessRepo()||''; ($('lRepo').value?$('lToken'):$('lRepo')).focus(); };
+  $('lGo').onclick=async()=>{
+    const m=$('lMsg'), r=$('lRepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/$/,''), t=$('lToken').value.trim();
+    if(!/^[\w.-]+\/[\w.-]+$/.test(r)) return flash(m,'Escribe el repositorio como usuario/nombre.',true);
+    if(!t) return flash(m,'Pega tu clave de GitHub.',true);
+    repo=r; token=t; $('lGo').disabled=true;
+    try{
+      data=norm(await loadAdmin());
+      LS.set('gh_repo',r); LS.set('gh_token',t); $('lToken').value=''; setStatus(''); render();
+    }catch(e){
+      token=null; flash(m,e.message==='auth'?'La clave no es válida o no tiene acceso a ese repositorio.':e.message==='404'?'No encontré datos.json en ese repositorio.':'No se pudo conectar con GitHub.',true);
+    }finally{ $('lGo').disabled=false; }
+  };
+  $('logout').onclick=()=>{ LS.del('gh_token'); token=null; open=null; setStatus(''); render(); };
+
+  /* ---------- inicio ---------- */
+  $('gFecha').value=today(); $('pFecha').value=today();
+  (async()=>{
+    repo=LS.get('gh_repo')||guessRepo(); const t=LS.get('gh_token');
+    if(t&&repo){
+      token=t;
+      try{ data=norm(await loadAdmin()); setStatus(''); render(); return; }
+      catch(e){ token=null; LS.del('gh_token'); }
+    }
+    try{ data=norm(await loadPublic()); setStatus(''); }
+    catch(e){ $('status').textContent='No se pudieron cargar los datos. Recarga la página.'; }
+    render();
+  })();
+  document.addEventListener('visibilitychange',async()=>{
+    if(document.visibilityState!=='visible'||isAdmin()) return;
+    try{ data=norm(await loadPublic()); render(); }catch(e){}
+  });
+})();
+</script>
+</body>
+</html>
