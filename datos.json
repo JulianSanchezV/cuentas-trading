@@ -56,9 +56,30 @@
       "monto": 3068500,
       "creado": 1790646533561,
       "mes": "2026-09"
+    },
+    {
+      "id": "mum4trgbf9jy4",
+      "tipo": "aporte",
+      "persona": "Beatriz",
+      "mes": "2026-10",
+      "fecha": "2026-09-28",
+      "monto": 535576,
+      "nota": "Aumenta su capital en Octubre 2026",
+      "creado": 1790653443131
+    },
+    {
+      "id": "mum4trgbquoao",
+      "tipo": "aporte",
+      "persona": "Oscar",
+      "mes": "2026-10",
+      "fecha": "2026-09-28",
+      "monto": 4464924,
+      "nota": "Aumenta su capital en Octubre 2026",
+      "creado": 1790653443133
     }
   ],
   "meses": [
-    "2026-09"
+    "2026-09",
+    "2026-10"
   ]
 }
