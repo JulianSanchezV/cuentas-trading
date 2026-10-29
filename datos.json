@@ -76,6 +76,16 @@
       "monto": 4464924,
       "nota": "Aumenta su capital en Octubre 2026",
       "creado": 1793250286594
+    },
+    {
+      "id": "mvt2xvdk175zz",
+      "tipo": "ganancia",
+      "mes": "2026-10",
+      "fecha": "2026-10-31",
+      "usd": 821,
+      "trm": 3200,
+      "monto": 2627200,
+      "creado": 1793250321176
     }
   ],
   "meses": [
